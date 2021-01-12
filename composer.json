@@ -14,8 +14,7 @@
     "require": {
         "php": "^7.4",
         "symfony/mercure-bundle": "*",
-        "symfony/http-kernel": "^4.4 || ^5.0",
-        "luxapps/metronic-bundle": "^2.28.37"
+        "symfony/http-kernel": "^4.4 || ^5.0"
     },
     "require-dev": {
         "dama/doctrine-test-bundle": "^6.0",
