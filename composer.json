@@ -1,0 +1,36 @@
+{
+    "name": "jul6art/push-bundle",
+    "type": "symfony-bundle",
+    "description": "Symfony real-time notification bundle",
+    "homepage": "https://github.com/jul6art/push-bundle",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "LuxApps",
+            "email": "admin@devinthehood.com",
+            "homepage": "https://devinthehood.com/"
+        }
+    ],
+    "require": {
+        "php": "^7.4",
+        "symfony/mercure-bundle": "*",
+        "symfony/http-kernel": "^4.4 || ^5.0",
+        "luxapps/metronic-bundle": "^2.28.37"
+    },
+    "require-dev": {
+        "dama/doctrine-test-bundle": "^6.0",
+        "phpunit/phpunit": "^7.0",
+        "symfony/phpunit-bridge": "^4.4 || ^5.0",
+        "symfony/var-dumper": "^4.4 || ^5.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "LuxApps\\PushBundle\\": ""
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "Tests/"
+        }
+    }
+}
