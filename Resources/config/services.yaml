@@ -1,0 +1,6 @@
+services:
+
+    Jul6Art\PushBundle\Service\Pusher:
+        arguments:
+            - '%push.async%'
+            - '%push.enabled%'

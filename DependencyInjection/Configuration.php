@@ -21,6 +21,7 @@ class Configuration implements ConfigurationInterface
 
         $node
             ->children()
+            ->scalarNode('async')->defaultFalse()->end()
             ->scalarNode('enabled')->defaultTrue()->end()
             ->end();
 
