@@ -19,12 +19,12 @@ class PushExtension extends Extension implements PrependExtensionInterface
      */
     public function load(array $configs, ContainerBuilder $container)
     {
-//        $loader = new YamlFileLoader(
-//            $container,
-//            new FileLocator(__DIR__.'/../Resources/config')
-//        );
-//
-//        $loader->load('services.yaml');
+        $loader = new YamlFileLoader(
+            $container,
+            new FileLocator(__DIR__.'/../Resources/config')
+        );
+
+        $loader->load('services.yaml');
 
         $this->addAnnotatedClassesToCompile([
             'Jul6Art\\PushBundle\\',
@@ -45,5 +45,26 @@ class PushExtension extends Extension implements PrependExtensionInterface
         foreach ($config as $key => $parameter) {
             $container->setParameter(sprintf('%s.%s', $this->getAlias(), $key), $parameter);
         }
+
+        $container->prependExtensionConfig('framework', [
+            'messenger' => [
+                'transports' => [
+                    'sync' => 'sync://',
+                    'async_priority_high' =>[
+                        'dsn' => $config['transport_method'],
+                        'options' => [
+                            'queue_name' => 'high',
+                        ],
+                    ],
+                    'async_priority_low' => [
+                        'dsn' => $config['transport_method'],
+                        'options' => [
+                            'queue_name' => 'high',
+                        ],
+                    ],
+                ],
+                'routing' => $config['routing'] ?? [],
+            ],
+        ]);
     }
 }

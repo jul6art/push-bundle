@@ -2,6 +2,7 @@
 
 namespace Jul6Art\PushBundle\DependencyInjection;
 
+use Jul6Art\PushBundle\DependencyInjection\Constants\TransportType;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
 
@@ -21,8 +22,13 @@ class Configuration implements ConfigurationInterface
 
         $node
             ->children()
-            ->scalarNode('async')->defaultFalse()->end()
-            ->scalarNode('enabled')->defaultTrue()->end()
+                ->scalarNode('async')->defaultFalse()->end()
+                ->scalarNode('enabled')->defaultTrue()->end()
+                ->scalarNode('transport_type')->defaultValue(TransportType::TRANSPORT_TYPE_DATABASE)->end()
+                ->scalarNode('transport_method')->defaultValue('doctrine://default')->end()
+                ->arrayNode('routing')->useAttributeAsKey('name')
+                    ->scalarPrototype()->end()
+                ->end()
             ->end();
 
         return $builder;

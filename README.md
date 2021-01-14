@@ -128,6 +128,18 @@ Server side
 
 ```
 
+Async (Optionnal)
+----------------
+
+```yaml
+push:
+    async: true
+    routing:
+        PathToSomeDispatcher: async_priority_high
+```
+
+Can be async_priority_high or async_priority_low or sync
+
 License
 -------
 
