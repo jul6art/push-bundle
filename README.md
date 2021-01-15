@@ -125,7 +125,20 @@ Using without api-platform
 Server side
 
 ```php
+use Jul6Art\PushBundle\Service\Traits\PusherAwareTrait;
 
+/**
+ * Class RequestEventSubscriber
+ */
+class SomeService
+{
+    use PusherAwareTrait;
+
+    public function function(): void
+    {
+        $this->pusher->push('/some/topic', ['test' => true]);
+    }
+}
 ```
 
 Async (Optionnal)
@@ -134,11 +147,19 @@ Async (Optionnal)
 ```yaml
 push:
     async: true
+```
+
+Other async messages (Optionnal)
+--------------------------------
+
+```yaml
+push:
+    async: true
     routing:
         PathToSomeDispatcher: async_priority_high
 ```
 
-Can be async_priority_high or async_priority_low or sync
+Can be **async_priority_high** or **async_priority_low** or **sync**
 
 License
 -------

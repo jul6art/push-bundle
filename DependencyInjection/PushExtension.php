@@ -8,6 +8,7 @@ use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Extension\PrependExtensionInterface;
 use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
 use Symfony\Component\HttpKernel\DependencyInjection\Extension;
+use Symfony\Component\Mercure\Update;
 
 /**
  * Class PushExtension.
@@ -46,6 +47,12 @@ class PushExtension extends Extension implements PrependExtensionInterface
             $container->setParameter(sprintf('%s.%s', $this->getAlias(), $key), $parameter);
         }
 
+        $routing = $config['routing'] ?? [];
+
+        if ($config['async']) {
+            $routing[Update::class] = 'async_priority_high';
+        }
+
         $container->prependExtensionConfig('framework', [
             'messenger' => [
                 'transports' => [
@@ -63,7 +70,7 @@ class PushExtension extends Extension implements PrependExtensionInterface
                         ],
                     ],
                 ],
-                'routing' => $config['routing'] ?? [],
+                'routing' => $routing,
             ],
         ]);
     }

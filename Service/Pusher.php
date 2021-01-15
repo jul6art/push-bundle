@@ -22,20 +22,19 @@ class Pusher
     protected $enabled;
 
     /**
-     * @required
-     *
      * @var PublisherInterface
      */
     protected $publisher;
 
     /**
-     * @required
      *
      * @var MessageBusInterface
      */
     protected $bus;
 
     /**
+     * @required
+     *
      * @param PublisherInterface $publisher
      */
     public function setPublisher(PublisherInterface $publisher): void
@@ -44,6 +43,8 @@ class Pusher
     }
 
     /**
+     * @required
+     *
      * @param MessageBusInterface $bus
      */
     public function setBus(MessageBusInterface $bus): void
@@ -68,7 +69,7 @@ class Pusher
      */
     public function push(string $url, iterable $data = []): void
     {
-        if ($this->enabled) {
+        if (!$this->enabled) {
             return;
         }
 

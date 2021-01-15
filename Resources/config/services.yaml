@@ -1,6 +1,9 @@
 services:
 
     Jul6Art\PushBundle\Service\Pusher:
+        calls:
+            - [setBus, ['@messenger.default_bus']]
+            - [setPublisher, ['@Symfony\Component\Mercure\PublisherInterface']]
         arguments:
             - '%push.async%'
             - '%push.enabled%'
