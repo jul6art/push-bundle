@@ -27,7 +27,6 @@ class Pusher
     protected $publisher;
 
     /**
-     *
      * @var MessageBusInterface
      */
     protected $bus;
