@@ -66,7 +66,7 @@ class PushExtension extends Extension implements PrependExtensionInterface
                     'async_priority_low' => [
                         'dsn' => $config['transport_method'],
                         'options' => [
-                            'queue_name' => 'high',
+                            'queue_name' => 'low',
                         ],
                     ],
                 ],
