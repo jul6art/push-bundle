@@ -6,6 +6,11 @@ services:
         calls:
             - [setBus, ['@messenger.default_bus']]
 
+    Jul6Art\PushBundle\MessageHandler\EntityAsyncEventHandler:
+        calls:
+            - [setNotificationHandler, ['@App\Handler\NotificationHandler']]
+        tags: [messenger.message_handler]
+
     Jul6Art\PushBundle\Service\Pusher:
         calls:
             - [setBus, ['@messenger.default_bus']]
