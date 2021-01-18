@@ -12,10 +12,10 @@ use Jul6Art\PushBundle\Message\Interfaces\EntityAsyncEventInterface;
 interface AsyncFactoryInterface extends FactoryInterface
 {
     /**
-     * @param mixed ...$param
+     * @param mixed ...$args
      * @return Object
      */
-    public static function create(...$param): Object;
+    public static function create(...$args): Object;
 
     /**
      * @param string $class
