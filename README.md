@@ -166,4 +166,4 @@ License
 
 The Push Bundle is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
 
-&copy; 2019 [dev in the hood](https://devinthehood.com)
+&copy; 2021 [dev in the hood](https://devinthehood.com)
