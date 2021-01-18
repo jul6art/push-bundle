@@ -1,5 +1,11 @@
 services:
 
+    Jul6Art\PushBundle\EventListener\AbstractAsyncEntityEventListener:
+        parent: Jul6Art\CoreBundle\EventListener\AbstractEntityEventListener
+        abstract: true
+        calls:
+            - [setBus, ['@messenger.default_bus']]
+
     Jul6Art\PushBundle\Service\Pusher:
         calls:
             - [setBus, ['@messenger.default_bus']]

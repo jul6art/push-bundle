@@ -3,6 +3,7 @@
 namespace Jul6Art\PushBundle\DependencyInjection;
 
 use Exception;
+use Jul6Art\PushBundle\Message\EntityAsyncEvent;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Extension\PrependExtensionInterface;
@@ -51,6 +52,9 @@ class PushExtension extends Extension implements PrependExtensionInterface
 
         if ($config['async']) {
             $routing[Update::class] = 'async_priority_high';
+            $routing[EntityAsyncEvent::class] = 'async_priority_high';
+        } else {
+            $routing[EntityAsyncEvent::class] = 'sync';
         }
 
         $container->prependExtensionConfig('framework', [
