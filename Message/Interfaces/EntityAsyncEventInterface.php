@@ -10,12 +10,12 @@ interface EntityAsyncEventInterface extends AsyncEventInterface
     /**
      * @return string
      */
-    public function getClass(): string;
+    public function getEntityClass(): string;
 
     /**
      * @return int
      */
-    public function getId(): int;
+    public function getEntityId(): int;
 
     /**
      * @return string

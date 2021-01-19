@@ -18,7 +18,7 @@ final class AsyncFactory implements AsyncFactoryInterface
     public static function create(...$args): Object
     {
         if (\count($args) !== 4) {
-            Throw new \RuntimeException('You need 4 arguments to create an EntityAsyncEvent: string $type, string $class, int $id and ?int $currentUserId');
+            Throw new \InvalidArgumentException('You need 4 arguments to create an EntityAsyncEvent: string $type, string $class, int $id and ?int $currentUserId');
         }
 
         return new EntityAsyncEvent($args[0], $args[1], $args[2], $args[3]);

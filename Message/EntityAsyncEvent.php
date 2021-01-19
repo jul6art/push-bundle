@@ -12,12 +12,12 @@ class EntityAsyncEvent extends AbstractAsyncEvent implements EntityAsyncEventInt
     /**
      * @var string
      */
-    private $class;
+    private $entityClass;
 
     /**
      * @var int
      */
-    private $id;
+    private $entityId;
 
     /**
      * @var string
@@ -27,33 +27,33 @@ class EntityAsyncEvent extends AbstractAsyncEvent implements EntityAsyncEventInt
     /**
      * EntityAsyncEvent constructor.
      * @param string $type
-     * @param string $class
-     * @param int $id
+     * @param string $entityClass
+     * @param int $entityId
      * @param int|null $createdById
      */
-    public function __construct(string $type, string $class, int $id, int $createdById = null)
+    public function __construct(string $type, string $entityClass, int $entityId, int $createdById = null)
     {
         parent::__construct($createdById);
 
-        $this->class = $class;
-        $this->id = $id;
+        $this->entityClass = $entityClass;
+        $this->entityId = $entityId;
         $this->type = $type;
     }
 
     /**
      * @return string
      */
-    public function getClass(): string
+    public function getEntityClass(): string
     {
-        return $this->class;
+        return $this->entityClass;
     }
 
     /**
      * @return int
      */
-    public function getId(): int
+    public function getEntityId(): int
     {
-        return $this->id;
+        return $this->entityId;
     }
 
     /**
