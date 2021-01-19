@@ -32,7 +32,7 @@ final class AsyncFactory implements AsyncFactoryInterface
      */
     public static function createEntityCreatedMessage(string $entityClass, int $entityId, int $currentUserId = null): EntityAsyncEventInterface
     {
-        return self::create(EntityAsyncEventType::ENTITY_ASYNC_EVENT_TYPE_CREATED, $class, $id, $currentUserId);
+        return self::create(EntityAsyncEventType::ENTITY_ASYNC_EVENT_TYPE_CREATED, $entityClass, $entityId, $currentUserId);
     }
 
 
@@ -44,7 +44,7 @@ final class AsyncFactory implements AsyncFactoryInterface
      */
     public static function createEntityDeletedMessage(string $entityClass, int $entityId, int $currentUserId = null): EntityAsyncEventInterface
     {
-        return self::create(EntityAsyncEventType::ENTITY_ASYNC_EVENT_TYPE_DELETED, $class, $id, $currentUserId);
+        return self::create(EntityAsyncEventType::ENTITY_ASYNC_EVENT_TYPE_DELETED, $entityClass, $entityId, $currentUserId);
     }
 
 
@@ -56,7 +56,7 @@ final class AsyncFactory implements AsyncFactoryInterface
      */
     public static function createEntityEditedMessage(string $entityClass, int $entityId, int $currentUserId = null): EntityAsyncEventInterface
     {
-        return self::create(EntityAsyncEventType::ENTITY_ASYNC_EVENT_TYPE_EDITED, $class, $id, $currentUserId);
+        return self::create(EntityAsyncEventType::ENTITY_ASYNC_EVENT_TYPE_EDITED, $entityClass, $entityId, $currentUserId);
     }
 
 
@@ -68,6 +68,6 @@ final class AsyncFactory implements AsyncFactoryInterface
      */
     public static function createEntityViewedMessage(string $entityClass, int $entityId, int $currentUserId): EntityAsyncEventInterface
     {
-        return self::create(EntityAsyncEventType::ENTITY_ASYNC_EVENT_TYPE_VIEWED, $class, $id, $currentUserId);
+        return self::create(EntityAsyncEventType::ENTITY_ASYNC_EVENT_TYPE_VIEWED, $entityClass, $entityId, $currentUserId);
     }
 }
