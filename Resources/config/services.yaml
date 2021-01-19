@@ -4,11 +4,15 @@ services:
         calls:
             - [setReader, ['@annotations.reader']]
 
+    Jul6Art\PushBundle\Dispatcher\AsyncDispatcher:
+        calls:
+            - [setBus, ['@messenger.default_bus']]
+
     Jul6Art\PushBundle\EntityListener\AbstractAsyncEntityListener:
         parent: Jul6Art\CoreBundle\EntityListener\AbstractEntityListener
         abstract: true
         calls:
-            - [setBus, ['@messenger.default_bus']]
+            - [setAsyncDispatcher, ['@Jul6Art\PushBundle\Dispatcher\AsyncDispatcher']]
 
     Jul6Art\PushBundle\MessageHandler\EntityAsyncEventHandler:
         calls:

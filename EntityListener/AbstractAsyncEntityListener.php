@@ -4,8 +4,9 @@ namespace Jul6Art\PushBundle\EntityListener;
 
 use Doctrine\ORM\Event\LifecycleEventArgs;
 use Jul6Art\CoreBundle\EntityListener\AbstractEntityListener;
+use Jul6Art\PushBundle\Dispatcher\Traits\AsyncDispatcherAwareTrait;
 use Jul6Art\PushBundle\EntityListener\Interfaces\AsyncEntityListenerInterface;
-use Jul6Art\PushBundle\Factory\AsyncFactory;
+use Jul6Art\PushBundle\Factory\EntityAsyncEventFactory;
 use Jul6Art\PushBundle\Service\Traits\MessageBusAwareTrait;
 
 /**
@@ -13,7 +14,7 @@ use Jul6Art\PushBundle\Service\Traits\MessageBusAwareTrait;
  */
 abstract class AbstractAsyncEntityListener extends AbstractEntityListener implements AsyncEntityListenerInterface
 {
-    use MessageBusAwareTrait;
+    use AsyncDispatcherAwareTrait;
 
     /**
      * @param Object $entity
@@ -24,11 +25,7 @@ abstract class AbstractAsyncEntityListener extends AbstractEntityListener implem
         $currentUserId = $this->getCurrentUserIdOrNull();
 
         if (null !== $currentUserId) {
-            $this->bus->dispatch(AsyncFactory::createEntityViewedMessage(
-                get_class($entity),
-                $entity->getId(),
-                $currentUserId
-            ));
+            $this->asyncDispatcher->dispatch(EntityAsyncEventFactory::createEntityViewedMessage($entity, $currentUserId));
         }
     }
 
@@ -38,11 +35,7 @@ abstract class AbstractAsyncEntityListener extends AbstractEntityListener implem
      */
     public function postPersist(Object $entity, LifecycleEventArgs $event): void
     {
-        $this->bus->dispatch(AsyncFactory::createEntityCreatedMessage(
-            get_class($entity),
-            $entity->getId(),
-            $this->getCurrentUserIdOrNull()
-        ));
+        $this->asyncDispatcher->dispatch(EntityAsyncEventFactory::createEntityCreatedMessage($entity, $this->getCurrentUserIdOrNull()));
     }
 
     /**
@@ -51,11 +44,7 @@ abstract class AbstractAsyncEntityListener extends AbstractEntityListener implem
      */
     public function postUpdate(Object $entity, LifecycleEventArgs $event): void
     {
-        $this->bus->dispatch(AsyncFactory::createEntityEditedMessage(
-            get_class($entity),
-            $entity->getId(),
-            $this->getCurrentUserIdOrNull()
-        ));
+        $this->asyncDispatcher->dispatch(EntityAsyncEventFactory::createEntityEditedMessage($entity, $this->getCurrentUserIdOrNull()));
     }
 
     /**
@@ -64,10 +53,6 @@ abstract class AbstractAsyncEntityListener extends AbstractEntityListener implem
      */
     public function preRemove(Object $entity, LifecycleEventArgs $event): void
     {
-        $this->bus->dispatch(AsyncFactory::createEntityDeletedMessage(
-            get_class($entity),
-            $entity->getId(),
-            $this->getCurrentUserIdOrNull()
-        ));
+        $this->asyncDispatcher->dispatch(EntityAsyncEventFactory::createEntityDeletedMessage($entity, $this->getCurrentUserIdOrNull()));
     }
 }
