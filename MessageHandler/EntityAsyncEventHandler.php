@@ -2,15 +2,11 @@
 
 namespace Jul6Art\PushBundle\MessageHandler;
 
-use App\Entity\Category;
-use App\Entity\Member;
-use App\Event\CategoryEvent;
 use Jul6Art\CoreBundle\Service\Traits\EntityManagerAwareTrait;
 use Jul6Art\CoreBundle\Service\Traits\EventDispatcherAwareTrait;
 use Jul6Art\PushBundle\Annotation\Traits\AsyncAnnotationReaderAwareTrait;
 use Jul6Art\PushBundle\Message\Constants\EntityAsyncEventType;
 use Jul6Art\PushBundle\Message\EntityAsyncEvent;
-use App\Handler\Traits\NotificationHandlerAwareTrait;
 use Doctrine\ORM\NonUniqueResultException;
 use Doctrine\ORM\OptimisticLockException;
 use Doctrine\ORM\ORMException;
