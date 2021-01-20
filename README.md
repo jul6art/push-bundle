@@ -28,7 +28,7 @@ Installation
 composer require jul6art/push-bundle
 ```
 
-Then Download the [https://github.com/dunglas/mercure/releases/tag/v0.3.3](mercure) hub depending on your operating system and install it in the root of your project. 
+Then Download the [mercure hub](https://github.com/dunglas/mercure/releases/tag/v0.3.3) depending on your operating system and install it in the root of your project. 
 For each release, the assets section list operating systems implementations. The folder must contain the mercure bin. Rename this folder **mercure**.
 
 EventSource Polyfill
@@ -43,7 +43,7 @@ and import it on client side to make push works on IE and Edge
 Generate new JWT token (Optionnal)
 ----------------------------------
 
-Go to [http://jwt.io](jwt.io) and put your future mercure secret key (default it's **!ChangeMe!**) in the **verify signature** textarea and this array in the **payload** textarea
+Go to [jwt.io](http://jwt.io) and put your future mercure secret key (default it's **!ChangeMe!**) in the **verify signature** textarea and this array in the **payload** textarea
 
 ```console
 {
@@ -53,7 +53,7 @@ Go to [http://jwt.io](jwt.io) and put your future mercure secret key (default it
 }
 ```
 
-Because the array is empty, the Symfony app will only be authorized to publish public updates (see the [https://symfony.com/doc/current/mercure.html#authorization](authorization) section of symfony/mercure-bundle for further information).
+Because the array is empty, the Symfony app will only be authorized to publish public updates (see the [authorization](https://symfony.com/doc/current/mercure.html#authorization) section of symfony/mercure-bundle for further information).
 
 THen store the generated token in your .env file as **MERCURE_JWT_TOKEN** parameter
 
