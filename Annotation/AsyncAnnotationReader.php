@@ -1,15 +1,15 @@
 <?php
+
 namespace Jul6Art\PushBundle\Annotation;
 
 use Doctrine\Common\Annotations\AnnotationReader;
-use Doctrine\ORM\Mapping\Annotation;
+use Jul6Art\PushBundle\Annotation\Interfaces\AsyncAnnotationReaderInterface;
 
 /**
  * Class AsyncAnnotationReader
  */
-class AsyncAnnotationReader
+class AsyncAnnotationReader implements AsyncAnnotationReaderInterface
 {
-
     /**
      * @var AnnotationReader
      */
@@ -26,12 +26,71 @@ class AsyncAnnotationReader
 
     /**
      * @param Object $entity
-     * @return Annotation|null
+     * @return Asyncable|null
      * @throws \ReflectionException
      */
-    public function getAsyncAnnotation(Object $entity): ?Annotation
+    public function getAsyncAnnotation(Object $entity): ?Asyncable
     {
         return $this->reader->getClassAnnotation(new \ReflectionClass(get_class($entity)), Asyncable::class);
+    }
+
+    /**
+     * @param Object $entity
+     * @param string $event
+     * @return bool
+     * @throws \ReflectionException
+     */
+    public function hasEvent(Object $entity, string $event): bool
+    {
+        if (!$this->isAsyncable($entity)) {
+            return false;
+        }
+
+        $annotation = $this->getAsyncAnnotation($entity);
+
+        $events = $annotation->getEvents();
+
+        return !\count($events) or in_array($event, $events);
+    }
+
+    /**
+     * @param Object $entity
+     * @return bool
+     * @throws \ReflectionException
+     */
+    public function hasPostLoadEvent(Object $entity): bool
+    {
+        return $this->hasEvent($entity, 'postLoad');
+    }
+
+    /**
+     * @param Object $entity
+     * @return bool
+     * @throws \ReflectionException
+     */
+    public function hasPostPersistEvent(Object $entity): bool
+    {
+        return $this->hasEvent($entity, 'postPersist');
+    }
+
+    /**
+     * @param Object $entity
+     * @return bool
+     * @throws \ReflectionException
+     */
+    public function hasPostUpdateEvent(Object $entity): bool
+    {
+        return $this->hasEvent($entity, 'postUpdate');
+    }
+
+    /**
+     * @param Object $entity
+     * @return bool
+     * @throws \ReflectionException
+     */
+    public function hasPreRemoveEvent(Object $entity): bool
+    {
+        return $this->hasEvent($entity, 'preRemove');
     }
 
     /**

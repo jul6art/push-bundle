@@ -39,24 +39,32 @@ class EntityAsyncEventHandler implements MessageHandlerInterface
             return;
         }
 
-        $eventClass = $this->asyncAnnotationReader->getAsyncAnnotation($entity)->getEvent();
+        $eventClass = $this->asyncAnnotationReader->getAsyncAnnotation($entity)->getEventClass();
 
         $event = new $eventClass($entity);
         $event->getData()->set('createdById', $message->getCreatedById());
 
         switch ($message->getType()) {
             case EntityAsyncEventType::ENTITY_ASYNC_EVENT_TYPE_CREATED:
-                $this->eventDispatcher->dispatch($event, $eventClass::CREATED);
+                if ($this->asyncAnnotationReader->hasPostPersistEvent($entity)) {
+                    $this->eventDispatcher->dispatch($event, $eventClass::CREATED);
+                }
                 break;
             case EntityAsyncEventType::ENTITY_ASYNC_EVENT_TYPE_DELETED:
-                $this->eventDispatcher->dispatch($event, $eventClass::DELETED);
+                if ($this->asyncAnnotationReader->hasPreRemoveEvent($entity)) {
+                    $this->eventDispatcher->dispatch($event, $eventClass::DELETED);
+                }
                 break;
             case EntityAsyncEventType::ENTITY_ASYNC_EVENT_TYPE_EDITED:
-                $this->eventDispatcher->dispatch($event, $eventClass::EDITED);
+                if ($this->asyncAnnotationReader->hasPostUpdateEvent($entity)) {
+                    $this->eventDispatcher->dispatch($event, $eventClass::EDITED);
+                }
                 break;
             case EntityAsyncEventType::ENTITY_ASYNC_EVENT_TYPE_VIEWED:
             default:
-                $this->eventDispatcher->dispatch($event, $eventClass::VIEWED);
+                if ($this->asyncAnnotationReader->hasPostLoadEvent($entity)) {
+                    $this->eventDispatcher->dispatch($event, $eventClass::VIEWED);
+                }
         }
     }
 }

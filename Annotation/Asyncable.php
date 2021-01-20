@@ -18,7 +18,12 @@ class Asyncable implements AnnotationInterface
     /**
      * @var string
      */
-    private $event;
+    private $eventClass;
+
+    /**
+     * @var string[]
+     */
+    private $events = [];
 
     /**
      * Asyncable constructor.
@@ -26,18 +31,30 @@ class Asyncable implements AnnotationInterface
      */
     public function __construct(array $params)
     {
-        if (!array_key_exists('event', $params)) {
-            throw new \InvalidArgumentException('"event" parameter missing in @Asyncable annotation');
+        if (!array_key_exists('eventClass', $params)) {
+            throw new \InvalidArgumentException('"eventClass" parameter missing in @Asyncable annotation');
         }
 
-        $this->event = $params['event'];
+        $this->eventClass = $params['eventClass'];
+
+        if (array_key_exists('events', $params) and \is_iterable($params['events'])) {
+            $this->events = $params['events'];
+        }
     }
 
     /**
      * @return string
      */
-    public function getEvent(): string
+    public function getEventClass(): string
     {
-        return $this->event;
+        return $this->eventClass;
+    }
+
+    /**
+     * @return string[]
+     */
+    public function getEvents(): iterable
+    {
+        return $this->events;
     }
 }

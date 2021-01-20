@@ -69,6 +69,12 @@ ADDR is the server url and 3000 is the port for mercure server
 JWT_KEY='!ChangeMe!' ADDR='localhost:3000' ALLOW_ANONYMOUS=1 CORS_ALLOWED_ORIGINS="http://localhost:80" ./mercure/mercure
 ```
 
+> :warning: By default, push messages are async so you need to launch a crawler in a terminal to dequeue messages and send it
+
+```console
+bin/console messenger:consume async_priority_high --time-limit 600
+```
+
 Using with api-platform
 -----------------------
 
@@ -141,25 +147,107 @@ class SomeService
 }
 ```
 
-Async (Optionnal)
+Sync (Optionnal)
 ----------------
 
 ```yaml
 push:
-    async: true
+    async: false
 ```
 
-Other async messages (Optionnal)
---------------------------------
+Other messenger messages (Optionnal)
+------------------------------------
 
 ```yaml
 push:
-    async: true
     routing:
         PathToSomeDispatcher: async_priority_high
 ```
 
 Can be **async_priority_high** or **async_priority_low** or **sync**
+
+Asyncable Annotation (Optionnal)
+--------------------------------
+
+My Entity
+
+```php
+/**
+ * @ORM\Entity(repositoryClass=MyClassRepository::class)
+ * @Asyncable(eventClass="App\Event\MyClassEvent")
+ */
+class MyClass
+{
+
+}
+```
+
+My EntityEvent
+
+```php
+<?php
+
+namespace App\Event;
+
+use App\Entity\MyClass;
+use Jul6Art\CoreBundle\Event\AbstractEvent;
+
+/**
+ * Class MyClassEvent
+ */
+class MyClassEvent extends AbstractEvent
+{
+    public const CREATED = 'event.my_class.created';
+    public const DELETED = 'event.my_class.deleted';
+    public const EDITED = 'event.my_class.edited';
+    public const VIEWED = 'event.my_class.viewed';
+
+    /**
+     * @var MyClass
+     */
+    private $myClass;
+
+    public function __construct(MyClass $myClass)
+    {
+        parent::__construct();
+
+        $this->myClass = $myClass;
+    }
+
+    public function getMyClass(): MyClass
+    {
+        return $this->myClass;
+    }
+
+    public function setMyClass(MyClass $myClass): MyClassEvent
+    {
+        $this->myClass = $myClass;
+        return $this;
+    }
+}
+```
+
+All actions in listeners who listen these event class consts whill be async
+
+> You can also specify which doctrine events you want to track
+
+```php
+/**
+ * @ORM\Entity(repositoryClass=MyClassRepository::class)
+ * @Asyncable(eventClass="App\Event\MyClassEvent", events={"postLoad", "postPersist"})
+ */
+class MyClass
+{
+
+}
+```
+
+Available events are
+
+* postLoad
+* postPersist
+* postUpdate
+* preRemove
 
 License
 -------

@@ -8,11 +8,16 @@ services:
         calls:
             - [setBus, ['@messenger.default_bus']]
 
-    Jul6Art\PushBundle\EntityListener\AbstractAsyncEntityListener:
-        parent: Jul6Art\CoreBundle\EntityListener\AbstractEntityListener
-        abstract: true
+    Jul6Art\PushBundle\EventListener\AsyncEventListener:
+        parent: Jul6Art\CoreBundle\EventListener\AbstractEventListener
         calls:
+            - [setAsyncAnnotationReader, ['@Jul6Art\PushBundle\Annotation\AsyncAnnotationReader']]
             - [setAsyncDispatcher, ['@Jul6Art\PushBundle\Dispatcher\AsyncDispatcher']]
+        tags:
+            - { name: doctrine.event_listener, event: postLoad, method: postLoad }
+            - { name: doctrine.event_listener, event: postPersist, method: postPersist }
+            - { name: doctrine.event_listener, event: postUpdate, method: postUpdate }
+            - { name: doctrine.event_listener, event: preRemove, method: preRemove }
 
     Jul6Art\PushBundle\MessageHandler\EntityAsyncEventHandler:
         calls:

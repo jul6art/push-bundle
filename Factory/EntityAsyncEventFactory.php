@@ -37,7 +37,6 @@ final class EntityAsyncEventFactory implements EntityAsyncEventFactoryInterface
         return self::create(EntityAsyncEventType::ENTITY_ASYNC_EVENT_TYPE_CREATED, $entity, $currentUserId);
     }
 
-
     /**
      * @param Object $entity
      * @param int|null $currentUserId
@@ -48,7 +47,6 @@ final class EntityAsyncEventFactory implements EntityAsyncEventFactoryInterface
         return self::create(EntityAsyncEventType::ENTITY_ASYNC_EVENT_TYPE_DELETED, $entity, $currentUserId);
     }
 
-
     /**
      * @param Object $entity
      * @param int|null $currentUserId
@@ -58,7 +56,6 @@ final class EntityAsyncEventFactory implements EntityAsyncEventFactoryInterface
     {
         return self::create(EntityAsyncEventType::ENTITY_ASYNC_EVENT_TYPE_EDITED, $entity, $currentUserId);
     }
-
 
     /**
      * @param Object $entity
