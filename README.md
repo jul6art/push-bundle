@@ -28,7 +28,7 @@ Installation
 composer require jul6art/push-bundle
 ```
 
-Then Download the [https://github.com/dunglas/mercure/releases/tag/v0.3.3](mercure hub) depending on your operating system and install it in the root of your project. 
+Then Download the [https://github.com/dunglas/mercure/releases/tag/v0.3.3](mercure) hub depending on your operating system and install it in the root of your project. 
 For each release, the assets section list operating systems implementations. The folder must contain the mercure bin. Rename this folder **mercure**.
 
 EventSource Polyfill
