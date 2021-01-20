@@ -161,7 +161,7 @@ Other messenger messages (Optionnal)
 ```yaml
 push:
     routing:
-        PathToSomeDispatcher: async_priority_high
+        'PathToSomeAsyncMessage': async_priority_high
 ```
 
 Can be **async_priority_high** or **async_priority_low** or **sync**
@@ -227,7 +227,7 @@ class MyClassEvent extends AbstractEvent
 }
 ```
 
-All actions in listeners who listen these event class consts whill be async
+All actions in listeners who listen these event class consts will be async
 
 > You can also specify which doctrine events you want to track
 
