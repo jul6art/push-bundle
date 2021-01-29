@@ -2,7 +2,7 @@
 
 namespace Jul6Art\PushBundle\DependencyInjection;
 
-use Exception;
+use Jul6Art\CoreBundle\CoreBundle;
 use Jul6Art\PushBundle\Message\EntityAsyncEvent;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
@@ -36,10 +36,16 @@ class PushExtension extends Extension implements PrependExtensionInterface
     /**
      * {@inheritdoc}
      *
-     * @throws Exception
+     * @throws \Exception
      */
     public function prepend(ContainerBuilder $container)
     {
+        $bundles = $container->getParameter('kernel.bundles');
+
+        if (!isset($bundles['CoreBundle'])) {
+            throw new \RuntimeException(sprintf('"%s" bundle is required', CoreBundle::class));
+        }
+
         $configs = $container->resolveEnvPlaceholders($container->getExtensionConfig($this->getAlias()), true);
 
         $config = $this->processConfiguration(new Configuration(), $configs);
