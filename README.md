@@ -24,7 +24,7 @@ Requirements
 Installation
 ------------
 
-```console
+```shell
 composer require jul6art/push-bundle
 ```
 
@@ -34,7 +34,7 @@ For each release, the assets section list operating systems implementations. The
 EventSource Polyfill
 --------------------
 
-```console
+```shell
 npm install event-source-polyfill
 ```
 
@@ -45,7 +45,7 @@ Generate new JWT token (Optionnal)
 
 Go to [jwt.io](http://jwt.io) and put your future mercure secret key (default it's **!ChangeMe!**) in the **verify signature** textarea and this array in the **payload** textarea
 
-```console
+```json
 {
     "mercure": {
         "publish": []
@@ -65,13 +65,13 @@ The default token is signed with the secret key: !ChangeMe!
 CORS_ALLOWED_ORIGINS is the client URL and port. It can be * or a list of domains
 ADDR is the server url and 3000 is the port for mercure server
 
-```console
+```shell
 JWT_KEY='!ChangeMe!' ADDR='localhost:3000' ALLOW_ANONYMOUS=1 CORS_ALLOWED_ORIGINS="http://localhost:80" ./mercure/mercure
 ```
 
 > :warning: By default, push messages are async so you need to launch a crawler in a terminal to dequeue messages and send it
 
-```console
+```shell
 bin/console messenger:consume async_priority_high --time-limit 600
 ```
 
