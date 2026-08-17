@@ -1,31 +1,22 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Jul6Art\PushBundle\Message;
 
 use Jul6Art\PushBundle\Message\Interfaces\AsyncEventInterface;
 
 /**
- * Class AbstractAsyncEvent
+ * Class AbstractAsyncEvent.
  */
 abstract class AbstractAsyncEvent implements AsyncEventInterface
 {
-    /**
-     * @var int|null
-     */
-    protected $createdById;
-
-    /**
-     * AbstractAsyncEvent constructor.
-     * @param int|null $createdById
-     */
-    public function __construct(int $createdById = null)
-    {
-        $this->createdById = $createdById;
+    public function __construct(
+        protected readonly ?int $createdById = null,
+    ) {
     }
 
-    /**
-     * @return int|null
-     */
+    #[\Override]
     public function getCreatedById(): ?int
     {
         return $this->createdById;

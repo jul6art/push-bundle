@@ -1,22 +1,20 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Jul6Art\PushBundle\Service\Traits;
 
 use Jul6Art\PushBundle\Service\Pusher;
+use Symfony\Contracts\Service\Attribute\Required;
 
 /**
- * Trait PusherAwareTrait
+ * Trait PusherAwareTrait.
  */
 trait PusherAwareTrait
 {
-    /**
-     * @var Pusher
-     */
-    protected $pusher;
+    protected Pusher $pusher;
 
-    /**
-     * @required
-     */
+    #[Required]
     public function setPusher(Pusher $pusher): void
     {
         $this->pusher = $pusher;

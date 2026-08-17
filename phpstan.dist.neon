@@ -1,0 +1,18 @@
+parameters:
+    level: max
+    phpVersion:
+        min: 80500
+        max: 80599
+    paths:
+        - PushBundle.php
+        - Attribute
+        - DependencyInjection
+        - Dispatcher
+        - EventListener
+        - Factory
+        - Message
+        - MessageHandler
+        - Service
+        - Tests
+        - rector.php
+    treatPhpDocTypesAsCertain: false

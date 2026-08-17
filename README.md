@@ -4,7 +4,7 @@
 
 <p align="center">
     <a href="https://opensource.org/licenses/MIT" target="_blank"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License"></a>
-    <img src="https://img.shields.io/static/v1?label=stable&message=v1&color=orange" alt="Version">
+    <img src="https://img.shields.io/static/v1?label=stable&message=v2&color=orange" alt="Version">
 </p>
 
 jul6art/push-bundle
@@ -17,9 +17,10 @@ Symfony real-time notification bundle
 Requirements
 ------------
 
-* **php ^7.4 || ^8.0**
-* **symfony ^4.4 || ^5.0**
-* **mercure**
+* **php ^8.5**
+* **symfony ^7.4 || ^8.0**
+* **jul6art/core-bundle ^2.0**
+* **mercure** (symfony/mercure-bundle ^0.3)
 
 Installation
 ------------
@@ -81,10 +82,12 @@ Using with api-platform
 Server side
 
 ```php
-/**
- * @ApiResource(mercure=true)
- */
-class SomeTopic {}
+use ApiPlatform\Metadata\ApiResource;
+
+#[ApiResource(mercure: true)]
+class SomeTopic
+{
+}
 ```
 
 Client side
@@ -133,14 +136,11 @@ Server side
 ```php
 use Jul6Art\PushBundle\Service\Traits\PusherAwareTrait;
 
-/**
- * Class RequestEventSubscriber
- */
 class SomeService
 {
     use PusherAwareTrait;
 
-    public function function(): void
+    public function notify(): void
     {
         $this->pusher->push('/some/topic', ['test' => true]);
     }
@@ -166,52 +166,50 @@ push:
 
 Can be **async_priority_high** or **async_priority_low** or **sync**
 
-Asyncable Annotation (Optionnal)
---------------------------------
+Asyncable Attribute (Optionnal)
+-------------------------------
+
+The Asyncable annotation is now a PHP attribute: `Jul6Art\PushBundle\Attribute\Asyncable`.
 
 My Entity
 
 ```php
-/**
- * @ORM\Entity(repositoryClass=MyClassRepository::class)
- * @Asyncable(eventClass="App\Event\MyClassEvent")
- */
+use App\Event\MyClassEvent;
+use Doctrine\ORM\Mapping as ORM;
+use Jul6Art\PushBundle\Attribute\Asyncable;
+
+#[ORM\Entity(repositoryClass: MyClassRepository::class)]
+#[Asyncable(eventClass: MyClassEvent::class)]
 class MyClass
 {
-
 }
 ```
 
 My EntityEvent
 
+The event class must accept the entity as its only constructor argument and must
+extend `Jul6Art\CoreBundle\Event\AbstractEvent`.
+
 ```php
 <?php
+
+declare(strict_types=1);
 
 namespace App\Event;
 
 use App\Entity\MyClass;
 use Jul6Art\CoreBundle\Event\AbstractEvent;
 
-/**
- * Class MyClassEvent
- */
 class MyClassEvent extends AbstractEvent
 {
-    public const CREATED = 'event.my_class.created';
-    public const DELETED = 'event.my_class.deleted';
-    public const EDITED = 'event.my_class.edited';
-    public const VIEWED = 'event.my_class.viewed';
+    public const string CREATED = 'event.my_class.created';
+    public const string DELETED = 'event.my_class.deleted';
+    public const string EDITED = 'event.my_class.edited';
+    public const string VIEWED = 'event.my_class.viewed';
 
-    /**
-     * @var MyClass
-     */
-    private $myClass;
-
-    public function __construct(MyClass $myClass)
+    public function __construct(private MyClass $myClass)
     {
         parent::__construct();
-
-        $this->myClass = $myClass;
     }
 
     public function getMyClass(): MyClass
@@ -219,9 +217,10 @@ class MyClassEvent extends AbstractEvent
         return $this->myClass;
     }
 
-    public function setMyClass(MyClass $myClass): MyClassEvent
+    public function setMyClass(MyClass $myClass): static
     {
         $this->myClass = $myClass;
+
         return $this;
     }
 }
@@ -232,13 +231,10 @@ All actions in listeners who listen these event class consts will be async
 > You can also specify which doctrine events you want to track
 
 ```php
-/**
- * @ORM\Entity(repositoryClass=MyClassRepository::class)
- * @Asyncable(eventClass="App\Event\MyClassEvent", events={"postLoad", "postPersist"})
- */
+#[ORM\Entity(repositoryClass: MyClassRepository::class)]
+#[Asyncable(eventClass: MyClassEvent::class, events: ['postLoad', 'postPersist'])]
 class MyClass
 {
-
 }
 ```
 
@@ -249,6 +245,16 @@ Available events are
 * postUpdate
 * preRemove
 
+Quality assurance
+-----------------
+
+```shell
+composer qa           # coding standards, Rector, static analysis and tests
+composer test         # PHPUnit
+composer phpstan      # PHPStan, level max
+composer cs           # PHP-CS-Fixer, writes the fixes
+composer rector       # Rector, writes the fixes
+```
 License
 -------
 

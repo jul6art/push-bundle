@@ -1,18 +1,22 @@
 services:
 
-    Jul6Art\PushBundle\Annotation\AsyncAnnotationReader:
-        calls:
-            - [setReader, ['@annotations.reader']]
+    # The reader no longer needs Doctrine's annotation reader: Symfony 7 dropped the
+    # "annotations.reader" service, and attributes only require reflection.
+    Jul6Art\PushBundle\Attribute\AsyncAttributeReader: ~
+
+    Jul6Art\PushBundle\Attribute\Interfaces\AsyncAttributeReaderInterface: '@Jul6Art\PushBundle\Attribute\AsyncAttributeReader'
 
     Jul6Art\PushBundle\Dispatcher\AsyncDispatcher:
         calls:
-            - [setBus, ['@messenger.default_bus']]
+            - setBus: ['@messenger.default_bus']
+
+    Jul6Art\PushBundle\Dispatcher\Interfaces\AsyncDispatcherInterface: '@Jul6Art\PushBundle\Dispatcher\AsyncDispatcher'
 
     Jul6Art\PushBundle\EventListener\AsyncEventListener:
         parent: Jul6Art\CoreBundle\EventListener\AbstractEventListener
         calls:
-            - [setAsyncAnnotationReader, ['@Jul6Art\PushBundle\Annotation\AsyncAnnotationReader']]
-            - [setAsyncDispatcher, ['@Jul6Art\PushBundle\Dispatcher\AsyncDispatcher']]
+            - setAsyncAttributeReader: ['@Jul6Art\PushBundle\Attribute\Interfaces\AsyncAttributeReaderInterface']
+            - setAsyncDispatcher: ['@Jul6Art\PushBundle\Dispatcher\Interfaces\AsyncDispatcherInterface']
         tags:
             - { name: doctrine.event_listener, event: postLoad, method: postLoad }
             - { name: doctrine.event_listener, event: postPersist, method: postPersist }
@@ -21,16 +25,17 @@ services:
 
     Jul6Art\PushBundle\MessageHandler\EntityAsyncEventHandler:
         calls:
-            - [setAsyncAnnotationReader, ['@Jul6Art\PushBundle\Annotation\AsyncAnnotationReader']]
-            - [setEntityManager, ['@doctrine.orm.entity_manager']]
-            - [setEventDispatcher, ['@event_dispatcher']]
+            - setAsyncAttributeReader: ['@Jul6Art\PushBundle\Attribute\Interfaces\AsyncAttributeReaderInterface']
+            - setEntityManager: ['@doctrine.orm.entity_manager']
+            - setEventDispatcher: ['@event_dispatcher']
         tags:
             - { name: messenger.message_handler }
 
     Jul6Art\PushBundle\Service\Pusher:
-        calls:
-            - [setBus, ['@messenger.default_bus']]
-            - [setPublisher, ['@Symfony\Component\Mercure\PublisherInterface']]
         arguments:
             - '%push.async%'
             - '%push.enabled%'
+        calls:
+            - setBus: ['@messenger.default_bus']
+            # HubInterface replaces the deprecated PublisherInterface alias.
+            - setHub: ['@Symfony\Component\Mercure\HubInterface']

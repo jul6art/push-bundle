@@ -1,25 +1,21 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Jul6Art\PushBundle\Dispatcher\Traits;
 
-use Jul6Art\PushBundle\Dispatcher\AsyncDispatcher;
+use Jul6Art\PushBundle\Dispatcher\Interfaces\AsyncDispatcherInterface;
+use Symfony\Contracts\Service\Attribute\Required;
 
 /**
- * Trait AsyncDispatcherAwareTrait
+ * Trait AsyncDispatcherAwareTrait.
  */
 trait AsyncDispatcherAwareTrait
 {
-    /**
-     * @var AsyncDispatcher
-     */
-    protected $asyncDispatcher;
+    protected AsyncDispatcherInterface $asyncDispatcher;
 
-    /**
-     * @required
-     *
-     * @param AsyncDispatcher $asyncDispatcher
-     */
-    public function setAsyncDispatcher(AsyncDispatcher $asyncDispatcher): void
+    #[Required]
+    public function setAsyncDispatcher(AsyncDispatcherInterface $asyncDispatcher): void
     {
         $this->asyncDispatcher = $asyncDispatcher;
     }

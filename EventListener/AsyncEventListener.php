@@ -1,77 +1,76 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Jul6Art\PushBundle\EventListener;
 
-use Doctrine\ORM\Event\LifecycleEventArgs;
+use Doctrine\ORM\Event\PostLoadEventArgs;
+use Doctrine\ORM\Event\PostPersistEventArgs;
+use Doctrine\ORM\Event\PostUpdateEventArgs;
+use Doctrine\ORM\Event\PreRemoveEventArgs;
 use Jul6Art\CoreBundle\EventListener\AbstractEventListener;
-use Jul6Art\PushBundle\Annotation\Traits\AsyncAnnotationReaderAwareTrait;
+use Jul6Art\PushBundle\Attribute\Traits\AsyncAttributeReaderAwareTrait;
 use Jul6Art\PushBundle\Dispatcher\Traits\AsyncDispatcherAwareTrait;
 use Jul6Art\PushBundle\EventListener\Interfaces\AsyncEventListenerInterface;
 use Jul6Art\PushBundle\Factory\EntityAsyncEventFactory;
-use Jul6Art\PushBundle\Service\Traits\MessageBusAwareTrait;
 
 /**
- * Class AbstractAsyncEventListener
+ * Class AsyncEventListener.
  */
 class AsyncEventListener extends AbstractEventListener implements AsyncEventListenerInterface
 {
-    use AsyncAnnotationReaderAwareTrait;
+    use AsyncAttributeReaderAwareTrait;
     use AsyncDispatcherAwareTrait;
 
-    /**
-     * @param LifecycleEventArgs $args
-     */
-    public function postLoad(LifecycleEventArgs $args): void
+    #[\Override]
+    public function postLoad(PostLoadEventArgs $args): void
     {
         $entity = $args->getObject();
 
-        if (!$this->asyncAnnotationReader->hasPostLoadEvent($entity)) {
+        if (!$this->asyncAttributeReader->hasPostLoadEvent($entity)) {
             return;
         }
 
         $currentUserId = $this->getCurrentUserIdOrNull();
 
-        if (null !== $currentUserId) {
-            $this->asyncDispatcher->dispatch(EntityAsyncEventFactory::createEntityViewedMessage($entity, $currentUserId));
+        // A viewed event without a viewer carries no information.
+        if (null === $currentUserId) {
+            return;
         }
+
+        $this->asyncDispatcher->dispatch(EntityAsyncEventFactory::createEntityViewedMessage($entity, $currentUserId));
     }
 
-    /**
-     * @param LifecycleEventArgs $args
-     */
-    public function postPersist(LifecycleEventArgs $args): void
+    #[\Override]
+    public function postPersist(PostPersistEventArgs $args): void
     {
         $entity = $args->getObject();
 
-        if (!$this->asyncAnnotationReader->hasPostPersistEvent($entity)) {
+        if (!$this->asyncAttributeReader->hasPostPersistEvent($entity)) {
             return;
         }
 
         $this->asyncDispatcher->dispatch(EntityAsyncEventFactory::createEntityCreatedMessage($entity, $this->getCurrentUserIdOrNull()));
     }
 
-    /**
-     * @param LifecycleEventArgs $args
-     */
-    public function postUpdate(LifecycleEventArgs $args): void
+    #[\Override]
+    public function postUpdate(PostUpdateEventArgs $args): void
     {
         $entity = $args->getObject();
 
-        if (!$this->asyncAnnotationReader->hasPostUpdateEvent($entity)) {
+        if (!$this->asyncAttributeReader->hasPostUpdateEvent($entity)) {
             return;
         }
 
         $this->asyncDispatcher->dispatch(EntityAsyncEventFactory::createEntityEditedMessage($entity, $this->getCurrentUserIdOrNull()));
     }
 
-    /**
-     * @param LifecycleEventArgs $args
-     */
-    public function preRemove(LifecycleEventArgs $args): void
+    #[\Override]
+    public function preRemove(PreRemoveEventArgs $args): void
     {
         $entity = $args->getObject();
 
-        if (!$this->asyncAnnotationReader->hasPreRemoveEvent($entity)) {
+        if (!$this->asyncAttributeReader->hasPreRemoveEvent($entity)) {
             return;
         }
 

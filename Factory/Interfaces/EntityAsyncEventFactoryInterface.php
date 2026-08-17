@@ -1,5 +1,6 @@
 <?php
 
+declare(strict_types=1);
 
 namespace Jul6Art\PushBundle\Factory\Interfaces;
 
@@ -7,44 +8,21 @@ use Jul6Art\CoreBundle\Factory\Interfaces\FactoryInterface;
 use Jul6Art\PushBundle\Message\Interfaces\EntityAsyncEventInterface;
 
 /**
- * Interface EntityAsyncEventFactoryInterface
+ * Interface EntityAsyncEventFactoryInterface.
  */
 interface EntityAsyncEventFactoryInterface extends FactoryInterface
 {
     /**
-     * @param mixed ...$args
-     * @return Object
+     * Expects exactly three arguments: string $type, object $entity and
+     * ?int $currentUserId.
      */
-    public static function create(...$args): Object;
+    public static function create(mixed ...$args): EntityAsyncEventInterface;
 
-    /**
-     * @param Object $entity
-     * @param int|null $currentUserId
-     * @return EntityAsyncEventInterface
-     */
-    public static function createEntityCreatedMessage(Object $entity, int $currentUserId = null): EntityAsyncEventInterface;
+    public static function createEntityCreatedMessage(object $entity, ?int $currentUserId = null): EntityAsyncEventInterface;
 
+    public static function createEntityDeletedMessage(object $entity, ?int $currentUserId = null): EntityAsyncEventInterface;
 
-    /**
-     * @param Object $entity
-     * @param int|null $currentUserId
-     * @return EntityAsyncEventInterface
-     */
-    public static function createEntityDeletedMessage(Object $entity, int $currentUserId = null): EntityAsyncEventInterface;
+    public static function createEntityEditedMessage(object $entity, ?int $currentUserId = null): EntityAsyncEventInterface;
 
-
-    /**
-     * @param Object $entity
-     * @param int|null $currentUserId
-     * @return EntityAsyncEventInterface
-     */
-    public static function createEntityEditedMessage(Object $entity, int $currentUserId = null): EntityAsyncEventInterface;
-
-
-    /**
-     * @param Object $entity
-     * @param int $currentUserId
-     * @return EntityAsyncEventInterface
-     */
-    public static function createEntityViewedMessage(Object $entity, int $currentUserId): EntityAsyncEventInterface;
+    public static function createEntityViewedMessage(object $entity, int $currentUserId): EntityAsyncEventInterface;
 }
