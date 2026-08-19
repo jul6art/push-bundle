@@ -21,7 +21,15 @@
         </testsuite>
     </testsuites>
 
-    <source>
+    <!--
+        ignoreIndirectDeprecations: fail on deprecations this bundle triggers, not on the ones a
+        dependency triggers inside its own code. With `dependency-versions: lowest` the CI
+        installs the minimum of every constraint, and those releases predate PHP 8.4 — implicitly
+        nullable parameters throughout symfony/mercure 0.6 and the event-dispatcher contracts.
+        The bundle works with them; failing the build over their internals would only force the
+        minimums up for no real gain. Same policy as jul6art/core-bundle and jul6art/audit-bundle.
+    -->
+    <source ignoreIndirectDeprecations="true">
         <include>
             <directory>.</directory>
         </include>
