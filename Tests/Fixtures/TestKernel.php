@@ -37,6 +37,7 @@ final class TestKernel extends Kernel
         private readonly array $pushConfig = [],
         private readonly bool $withCore = true,
         private readonly string $uniqueId = 'default',
+        private readonly bool $withHub = true,
     ) {
         // Debug mode installs Symfony's error handler and never removes it, which
         // PHPUnit rightly reports as leaking global state.
@@ -52,7 +53,9 @@ final class TestKernel extends Kernel
         yield new FrameworkBundle();
         yield new SecurityBundle();
         yield new DoctrineBundle();
-        yield new MercureBundle();
+        if ($this->withHub) {
+            yield new MercureBundle();
+        }
 
         if ($this->withCore) {
             yield new CoreBundle();
@@ -148,9 +151,32 @@ final class TestKernel extends Kernel
 
         $container->loadFromExtension('doctrine', [
             'dbal' => ['driver' => 'pdo_sqlite', 'memory' => true],
-            'orm' => ['controller_resolver' => ['auto_mapping' => false]],
+            'orm' => [
+                'controller_resolver' => ['auto_mapping' => false],
+                'mappings' => [
+                    'PushBundleTests' => [
+                        'type' => 'attribute',
+                        'dir' => __DIR__.'/Entity',
+                        'prefix' => 'Jul6Art\\PushBundle\\Tests\\Fixtures\\Entity',
+                        'is_bundle' => false,
+                    ],
+                ],
+            ],
         ]);
 
+        if ($this->withHub) {
+            $this->configureMercure($container);
+        }
+
+        $container->loadFromExtension('push', $this->pushConfig);
+    }
+
+    /**
+     * Une application peut installer ce bundle pour son côté Messenger et n'avoir aucun hub :
+     * c'est le cas que `MercureHubPass` doit traiter en retirant tout le temps réel.
+     */
+    private function configureMercure(ContainerBuilder $container): void
+    {
         $container->loadFromExtension('mercure', [
             'hubs' => [
                 'default' => [
@@ -159,7 +185,5 @@ final class TestKernel extends Kernel
                 ],
             ],
         ]);
-
-        $container->loadFromExtension('push', $this->pushConfig);
     }
 }

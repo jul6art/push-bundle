@@ -26,8 +26,39 @@ final class ConfigurationTest extends TestCase
             'enabled' => true,
             'transport_type' => 'database',
             'transport_method' => 'doctrine://default',
+            'mercure' => [
+                'buffering' => true,
+                'topic_resolver' => null,
+                'jwt_secret' => null,
+                'token_lifetime' => 3600,
+                'cookie_name' => 'mercureAuthorization',
+                'cookie_path' => '/.well-known/mercure',
+                'cookie_secure' => true,
+            ],
             'routing' => [],
         ], $this->process([]));
+    }
+
+    /**
+     * Les deux défauts qui protègent quelque chose : la mise en tampon (une panne de hub ne doit
+     * pas devenir un 500) et le cookie `secure` (le jeton d'abonnement ne doit pas voyager en
+     * clair). Les abaisser doit être un choix écrit.
+     */
+    public function testTheProtectiveMercureDefaultsAreOn(): void
+    {
+        $mercure = $this->mercureDefaults();
+
+        self::assertTrue($mercure['buffering']);
+        self::assertTrue($mercure['cookie_secure']);
+    }
+
+    /**
+     * Aucun secret par défaut : signer un jeton d'abonnement avec autre chose que le secret du
+     * hub produit un jeton rejeté, ce qui se lit « le temps réel ne marche pas ».
+     */
+    public function testNoSubscriberSecretIsInvented(): void
+    {
+        self::assertNull($this->mercureDefaults()['jwt_secret']);
     }
 
     public function testItKeepsTheConfiguredValues(): void
@@ -67,6 +98,17 @@ final class ConfigurationTest extends TestCase
         yield 'async as int' => ['async', 0];
         yield 'enabled as string' => ['enabled', 'no'];
         yield 'enabled as int' => ['enabled', 1];
+    }
+
+    /**
+     * @return array<mixed>
+     */
+    private function mercureDefaults(): array
+    {
+        $mercure = $this->process([])['mercure'] ?? null;
+        self::assertIsArray($mercure);
+
+        return $mercure;
     }
 
     /**

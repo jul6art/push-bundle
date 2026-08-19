@@ -85,5 +85,9 @@
         "branch-alias": {
             "dev-master": "2.x-dev"
         }
+    },
+    "suggest": {
+        "lexik/jwt-authentication-bundle": "Required by Twig\\JwtTokenExtension — the jwt_token() function that lets front-end widgets authenticate their API calls",
+        "twig/twig": "Required by Twig\\JwtTokenExtension (registered only when Twig is present)"
     }
 }
