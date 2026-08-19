@@ -144,7 +144,15 @@ final class CollectingLogger extends AbstractLogger
     /** @var list<string> */
     public array $messages = [];
 
-    public function log($level, string|\Stringable $message, array $context = []): void
+    /**
+     * La signature suit `LoggerInterface` à la lettre : `psr/log` en version minimale ne type ni
+     * `$level` ni `$message`, et typer ici casse la compatibilité — le job « lowest deps » de la
+     * CI l'a montré là où une installation locale en psr/log 3 ne pouvait pas.
+     *
+     * @param string|\Stringable $message
+     * @param array<mixed>       $context
+     */
+    public function log($level, $message, array $context = []): void
     {
         $this->messages[] = (string) $message;
     }
