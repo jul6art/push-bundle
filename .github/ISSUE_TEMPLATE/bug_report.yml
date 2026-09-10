@@ -1,0 +1,71 @@
+name: Bug report
+description: Something this bundle does is wrong
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. The most useful bug report against a bundle is a
+        **failing test**: it says exactly what you expected, it cannot be
+        misread, and it is what the fix will be built on. If you can write one
+        against this repository, paste it below and skip the prose.
+
+        **Do not report a security problem here** — use
+        [private vulnerability reporting](https://github.com/jul6art/push-bundle/security/advisories/new)
+        instead, as described in [SECURITY.md](https://github.com/jul6art/push-bundle/blob/master/.github/SECURITY.md).
+  - type: input
+    id: version
+    attributes:
+      label: Bundle version
+      description: The exact version installed — `composer show jul6art/push-bundle | head -3`.
+      placeholder: v2.1.0
+    validations:
+      required: true
+  - type: input
+    id: symfony
+    attributes:
+      label: Symfony and PHP versions
+      placeholder: Symfony 7.4.3, PHP 8.5.1
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened instead
+      description: The exception, the stack trace, the wrong output, or what is on screen.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: |
+        A failing test against this repository if you can write one; otherwise
+        the smallest set of steps, with the code that triggers it.
+      render: php
+    validations:
+      required: true
+  - type: textarea
+    id: config
+    attributes:
+      label: Your configuration
+      description: The relevant part of `config/packages/push.yaml`, and any contract implementation involved.
+      render: yaml
+    validations:
+      required: false
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I am on the latest release of the supported line, and the problem is still there
+          required: true
+        - label: The problem is in this bundle, not in Symfony or another package it depends on
+          required: false

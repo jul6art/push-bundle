@@ -1,0 +1,51 @@
+name: Feature request
+description: Something this bundle should do, or do differently
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Worth knowing before you write: this bundle is **extracted from working
+        applications**, and its public surface is a promise to the projects that
+        depend on it. The bar for adding to it is a problem someone actually
+        hit, not a case that might one day come up.
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What are you working around today, and in which application?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you propose
+      description: |
+        Be concrete: a configuration key, a method on an existing service, a new
+        contract, an attribute. Sketch the code you would like to write in your
+        application.
+    validations:
+      required: true
+  - type: dropdown
+    id: breaking
+    attributes:
+      label: Does it break dependent applications?
+      description: |
+        Adding a method to a contract interface applications implement is a
+        breaking change, even when PHP only says so on upgrade.
+      options:
+        - 'No: existing code keeps working untouched'
+        - 'Yes: dependent applications must change code'
+        - I am not sure
+    validations:
+      required: true
+  - type: textarea
+    id: boundary
+    attributes:
+      label: Why it belongs in the bundle rather than in the application
+      description: |
+        This is usually the whole question. The bundle carries what every
+        application would otherwise rewrite; anything specific to one domain
+        stays in that domain.
+    validations:
+      required: true
