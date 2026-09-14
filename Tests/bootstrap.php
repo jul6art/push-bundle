@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-require dirname(__DIR__).'/vendor/autoload.php';
+require __DIR__.'/../vendor/autoload.php';
 
 // Start from a clean slate: the functional tests compile real containers into the
 // system temp directory and a stale one would silently invalidate the assertions.
