@@ -2,10 +2,8 @@
     <a href="https://devinthehood.com"><img src="https://github.com/jul6art/symfony-skeleton-generator/blob/master/public/img/logo.png?raw=true" alt="logo dev in the hood" width="400"></a>
 </p>
 
-jul6art/push-bundle
-===================
 Symfony real-time notification bundle
--------------------------------------
+=====================================
 
 <p align="left">
     <a href="https://opensource.org/licenses/MIT" target="_blank"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License"></a>
