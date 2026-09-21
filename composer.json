@@ -84,6 +84,9 @@
     "extra": {
         "branch-alias": {
             "dev-master": "2.x-dev"
+        },
+        "symfony": {
+            "require": "7.4.*"
         }
     },
     "suggest": {
