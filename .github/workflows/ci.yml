@@ -4,6 +4,9 @@ on:
     push:
         branches: [master]
     pull_request:
+    # Actions stay DISABLED between monthly passes: a push triggers nothing, and the pass starts
+    # this file with `gh workflow run ci.yml`.
+    workflow_dispatch:
 
 permissions:
     contents: read
