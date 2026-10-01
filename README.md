@@ -10,8 +10,6 @@ Symfony real-time notification bundle
     <img src="https://img.shields.io/static/v1?label=stable&message=v2&color=0ea5e9" alt="Version">
 </p>
 
-> :warning: Work in progress so keep calm. The good news: this is maintained!
-
 Requirements
 ------------
 
