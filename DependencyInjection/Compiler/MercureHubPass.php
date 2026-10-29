@@ -9,6 +9,7 @@ use Jul6Art\PushBundle\Mercure\EntityChangePublisher;
 use Jul6Art\PushBundle\Mercure\FeedTopicResolverInterface;
 use Jul6Art\PushBundle\Mercure\GlobalFeedTopicResolver;
 use Jul6Art\PushBundle\Mercure\MercureDrainListener;
+use Jul6Art\PushBundle\Mercure\SubscriberCookieFactory;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 
@@ -36,7 +37,7 @@ final class MercureHubPass implements CompilerPassInterface
             return;
         }
 
-        foreach ([EntityChangePublisher::class, BufferingHub::class, MercureDrainListener::class, GlobalFeedTopicResolver::class] as $service) {
+        foreach ([EntityChangePublisher::class, BufferingHub::class, MercureDrainListener::class, GlobalFeedTopicResolver::class, SubscriberCookieFactory::class] as $service) {
             $container->removeDefinition($service);
         }
 

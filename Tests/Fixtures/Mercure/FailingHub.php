@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace Jul6Art\PushBundle\Tests\Fixtures\Mercure;
 
-use Symfony\Component\Mercure\HubInterface;
-use Symfony\Component\Mercure\Jwt\StaticTokenProvider;
 use Symfony\Component\Mercure\Jwt\TokenFactoryInterface;
-use Symfony\Component\Mercure\Jwt\TokenProviderInterface;
+use Symfony\Component\Mercure\ProtocolVersion;
+use Symfony\Component\Mercure\RemoteHubInterface;
 use Symfony\Component\Mercure\Update;
 
 /**
@@ -15,7 +14,7 @@ use Symfony\Component\Mercure\Update;
  * timeout : tout cela ressort de `publish()` sous forme d'exception, et sans tampon cela tuait
  * la requête HTTP alors que l'écriture en base avait réussi.
  */
-final class FailingHub implements HubInterface
+final class FailingHub implements RemoteHubInterface
 {
     public int $attempts = 0;
 
@@ -36,13 +35,18 @@ final class FailingHub implements HubInterface
         return $this->getUrl();
     }
 
-    public function getProvider(): TokenProviderInterface
-    {
-        return new StaticTokenProvider('token');
-    }
-
     public function getFactory(): ?TokenFactoryInterface
     {
         return null;
+    }
+
+    public function getProtocolVersion(): ProtocolVersion
+    {
+        return ProtocolVersion::V1;
+    }
+
+    public function getCookieName(): string
+    {
+        return '__Secure-mercure_access_token';
     }
 }

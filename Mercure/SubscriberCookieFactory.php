@@ -5,15 +5,17 @@ declare(strict_types=1);
 namespace Jul6Art\PushBundle\Mercure;
 
 use Symfony\Component\HttpFoundation\Cookie;
-use Symfony\Component\Mercure\Jwt\TokenFactoryInterface;
+use Symfony\Component\Mercure\HubInterface;
+use Symfony\Component\Mercure\Jwt\Grant;
 
 /**
  * Mints the subscriber JWT and the cookie the browser needs to open an `EventSource`.
  *
- * A Mercure subscriber authenticates with a JWT carrying a `mercure.subscribe` claim, and the
- * browser cannot attach an `Authorization` header to an `EventSource` — hence a cookie, scoped
- * to the hub path. Both halves are fiddly and neither is application-specific, which is why they
- * live here:
+ * A Mercure subscriber authenticates with an access token granting `subscribe` on its topics, and
+ * the browser cannot attach an `Authorization` header to an `EventSource` — hence a cookie,
+ * scoped to the hub path. Mercure 1.0 offers no other way: the `authorization` query parameter is
+ * gone (RFC 9700 forbids a token in a URL). Both halves are fiddly and neither is
+ * application-specific, which is why they live here:
  *
  * ```php
  * #[Route('/organization/mercure-token', methods: ['GET'])]
@@ -31,7 +33,14 @@ use Symfony\Component\Mercure\Jwt\TokenFactoryInterface;
  * ```
  *
  * **Which topics a user may subscribe to stays in the application** — it is an authorisation
- * decision, and the JWT claim is what enforces it on the hub. The bundle signs what it is given.
+ * decision, and the token's grant is what enforces it on the hub. The bundle signs what it is
+ * given, with the hub's own factory: the `iss`, `aud`, `sub` and `client_id` claims a 1.0 hub
+ * requires come from `mercure.hubs.<name>.jwt.claims`, and the cookie bears the name the hub
+ * reads (`cookie_name`, `__Secure-mercure_access_token` by default).
+ *
+ * > ⚠️ **The hub must be served under the application's own host.** The cookie is host-only and
+ * > `SameSite=Strict`: a browser never sends it to a hub on another site, and 1.0 leaves no other
+ * > way in — relay `/.well-known/mercure` under the application's domain.
  *
  * > ⚠️ **Return the topic list to the client as well.** The claim and the topics the
  * > `EventSource` actually subscribes to must agree; deriving them twice — once here, once in a
@@ -51,8 +60,7 @@ final readonly class SubscriberCookieFactory
      *                      rather than "log in again"
      */
     public function __construct(
-        private TokenFactoryInterface $tokenFactory,
-        private string $cookieName = 'mercureAuthorization',
+        private HubInterface $hub,
         private string $cookiePath = '/.well-known/mercure',
         private int $lifetime = 3600,
         private bool $cookieSecure = true,
@@ -60,14 +68,17 @@ final readonly class SubscriberCookieFactory
     }
 
     /**
-     * @param list<string> $topics topics the subscriber is allowed to listen to
+     * @param list<string> $topics topics the subscriber is allowed to listen to, matched exactly
+     *                             (`*` matches every topic)
      */
     public function createToken(array $topics): string
     {
-        return $this->tokenFactory->create(
-            subscribe: $topics,
-            publish: [],
-            additionalClaims: ['exp' => new \DateTimeImmutable(\sprintf('+%d seconds', $this->lifetime))],
+        $factory = $this->hub->getFactory()
+            ?? throw new \LogicException('The Mercure hub signs no token: configure "mercure.hubs.<name>.jwt" (its secret, and the "iss", "aud", "sub" and "client_id" claims).');
+
+        return $factory->create(
+            [new Grant([Grant::ACTION_SUBSCRIBE], $topics)],
+            ['exp' => new \DateTimeImmutable(\sprintf('+%d seconds', $this->lifetime))],
         );
     }
 
@@ -79,7 +90,7 @@ final readonly class SubscriberCookieFactory
     public function createCookie(string $token): Cookie
     {
         return Cookie::create(
-            $this->cookieName,
+            $this->hub->getCookieName(),
             $token,
             new \DateTimeImmutable(\sprintf('+%d seconds', $this->lifetime)),
             $this->cookiePath,

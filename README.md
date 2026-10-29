@@ -343,14 +343,26 @@ push:
 
 ### Letting a browser subscribe
 
-A subscriber authenticates with a JWT carrying a `mercure.subscribe` claim, and an `EventSource`
-cannot send an `Authorization` header — hence a cookie scoped to the hub path.
-`Mercure\SubscriberCookieFactory` mints both:
+A subscriber authenticates with an access token granting `subscribe` on its topics, and an
+`EventSource` cannot send an `Authorization` header — hence a cookie scoped to the hub path. Since
+Mercure 1.0 there is no other way: the `authorization` query parameter is gone (RFC 9700 forbids a
+token in a URL). `Mercure\SubscriberCookieFactory` mints both, **with the hub's own token factory**:
+configure the hub for the protocol 1.0, with the claims a 1.0 hub requires.
 
 ```yaml
-push:
-    mercure:
-        jwt_secret: '%env(MERCURE_JWT_SECRET)%'   # the secret the hub validates with
+mercure:
+    hubs:
+        default:
+            url: '%env(MERCURE_URL)%'
+            public_url: '%env(MERCURE_PUBLIC_URL)%'
+            jwt:
+                secret: '%env(MERCURE_JWT_SECRET)%'
+                publish: ['*']
+                claims:
+                    iss: '%env(MERCURE_ISSUER)%'      # an issuer the hub trusts (its `issuer` block)
+                    aud: '%env(MERCURE_AUDIENCE)%'    # the hub's `resource_identifier`
+                    sub: my-app
+                    client_id: my-app
 ```
 
 ```php
@@ -361,7 +373,7 @@ public function __invoke(SubscriberCookieFactory $factory): Response
     $topics = $this->topicsFor($this->getUser());          // ← your authorisation decision
     $token = $factory->createToken($topics);
 
-    $response = new JsonResponse(['subscribed' => $topics, 'token' => $token]);
+    $response = new JsonResponse(['subscribed' => $topics]);
     $response->headers->setCookie($factory->createCookie($token));
 
     return $response;
@@ -369,16 +381,33 @@ public function __invoke(SubscriberCookieFactory $factory): Response
 ```
 
 **Which topics an account may subscribe to stays in your application** — it is an authorisation
-decision and the claim is what enforces it on the hub. Hand the same list back in the response so
-the front end subscribes to exactly what the token allows; deriving it twice is how the two
-drift.
+decision and the token's grant is what enforces it on the hub. Hand the same list back in the
+response so the front end subscribes to exactly what the token allows (`match=<topic>`, and
+`withCredentials: true` so the cookie goes along); deriving it twice is how the two drift.
 
-> ⚠️ **`*` is a wildcard on both sides.** A claim of `['*']` covers every topic, present and
+> ⚠️ **`*` is a wildcard on both sides.** A grant of `['*']` covers every topic, present and
 > future. Convenient for an administrator, a tenant leak for anyone else.
 
-Without `jwt_secret` the factory is not registered — signing a subscriber token with anything but
-the hub's own secret produces a token the hub rejects, which reads as "real-time is broken"
-rather than "the configuration is wrong".
+> ⚠️ **Serve the hub under the application's own host.** The cookie is host-only and
+> `SameSite=Strict`: a browser never sends it to a hub on another site. Relay
+> `/.well-known/mercure` under the application's domain.
+
+> ⚠️ **Pin the audience.** A 1.0 hub derives its resource identifier — the `aud` a token must
+> carry — from each request, and behind a TLS-terminating proxy or several domains that is
+> rarely the public URL. Set the hub's `resource_identifier` and the same value in `claims.aud`.
+
+The cookie bears the name the hub reads (`cookie_name` of the hub, `__Secure-mercure_access_token`
+by default, a name that requires HTTPS); `push.mercure.cookie_secure: false` exists only for a
+plain-http workstation, with a hub `cookie_name` without the `__Secure-` prefix.
+
+#### Upgrading from 2.x
+
+- `push.mercure.jwt_secret` and `push.mercure.cookie_name` are gone, and refused: the factory signs
+  with the hub's factory (`mercure.hubs.<name>.jwt`) and names the cookie as the hub does.
+- `symfony/mercure` ^0.9 and `symfony/mercure-bundle` ^0.6: the protocol 1.0 by default. The hub
+  must be a Mercure 1.x hub — or a 1.x hub in `protocol_version_compatibility 8` while other
+  applications still speak 0.x.
+- Subscribers: `topic=` becomes `match=`, and the token travels in the cookie only.
 
 ### Messenger routing and buffering are alternatives, not layers
 

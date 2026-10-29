@@ -181,7 +181,18 @@ final class TestKernel extends Kernel
             'hubs' => [
                 'default' => [
                     'url' => 'https://example.com/.well-known/mercure',
-                    'jwt' => ['value' => 'jwt-token'],
+                    // Un secret et les claims d'un hub 1.0 : c'est la fabrique de ce hub qui signe
+                    // le jeton d'abonnement (SubscriberCookieFactory).
+                    'jwt' => [
+                        'secret' => 'a-secret-that-is-long-enough-for-hmac-sha256',
+                        'publish' => ['*'],
+                        'claims' => [
+                            'iss' => 'https://example.com',
+                            'aud' => 'https://example.com/.well-known/mercure',
+                            'sub' => 'push-bundle',
+                            'client_id' => 'push-bundle',
+                        ],
+                    ],
                 ],
             ],
         ]);

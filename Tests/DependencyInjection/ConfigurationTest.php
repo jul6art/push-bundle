@@ -8,6 +8,7 @@ use Jul6Art\PushBundle\DependencyInjection\Configuration;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Config\Definition\Exception\InvalidConfigurationException;
 use Symfony\Component\Config\Definition\Exception\InvalidTypeException;
 use Symfony\Component\Config\Definition\Processor;
 
@@ -29,9 +30,7 @@ final class ConfigurationTest extends TestCase
             'mercure' => [
                 'buffering' => true,
                 'topic_resolver' => null,
-                'jwt_secret' => null,
                 'token_lifetime' => 3600,
-                'cookie_name' => 'mercureAuthorization',
                 'cookie_path' => '/.well-known/mercure',
                 'cookie_secure' => true,
             ],
@@ -53,12 +52,20 @@ final class ConfigurationTest extends TestCase
     }
 
     /**
-     * Aucun secret par défaut : signer un jeton d'abonnement avec autre chose que le secret du
-     * hub produit un jeton rejeté, ce qui se lit « le temps réel ne marche pas ».
+     * 3.0 : le secret et le nom du cookie sont ceux du hub (`mercure.hubs.<name>`). Les anciennes
+     * clés sont refusées plutôt qu'ignorées : un `jwt_secret` resté dans `push.yaml` ne doit pas
+     * laisser croire qu'il signe encore quoi que ce soit.
      */
-    public function testNoSubscriberSecretIsInvented(): void
+    public function testTheSecretAndTheCookieNameNoLongerLiveHere(): void
     {
-        self::assertNull($this->mercureDefaults()['jwt_secret']);
+        foreach (['jwt_secret' => 'a-secret', 'cookie_name' => 'mercureAuthorization'] as $key => $value) {
+            try {
+                $this->process([['mercure' => [$key => $value]]]);
+                self::fail(\sprintf('push.mercure.%s should be refused.', $key));
+            } catch (InvalidConfigurationException $e) {
+                self::assertStringContainsString($key, $e->getMessage());
+            }
+        }
     }
 
     public function testItKeepsTheConfiguredValues(): void

@@ -57,16 +57,25 @@ final class MercureWiringTest extends AbstractFunctionalTestCase
     }
 
     /**
-     * La fabrique de cookie n'apparaît qu'avec un secret : en signer un avec autre chose que le
-     * secret du hub produit un jeton rejeté, ce qui se lit « le temps réel ne marche pas » et non
-     * « la configuration est fausse ».
+     * La fabrique de cookie signe avec la fabrique du hub et nomme le cookie comme le hub le lit :
+     * un second secret ou un second nom, ici, finirait par diverger de ceux du hub, et un jeton
+     * rejeté se lit « le temps réel ne marche pas », pas « la configuration est fausse ». Sans
+     * hub, `MercureHubPass` la retire (MercureHubPassTest).
      */
-    public function testTheSubscriberFactoryNeedsASecret(): void
+    public function testTheSubscriberFactorySignsWithTheHub(): void
     {
-        self::assertFalse($this->boot()->has(SubscriberCookieFactory::class));
+        $container = $this->boot();
 
-        $container = $this->boot('test', ['mercure' => ['jwt_secret' => 'a-secret-long-enough-for-hmac-sha256']]);
-        self::assertInstanceOf(SubscriberCookieFactory::class, $container->get(SubscriberCookieFactory::class));
+        $factory = $container->get(SubscriberCookieFactory::class);
+        self::assertInstanceOf(SubscriberCookieFactory::class, $factory);
+
+        [, $payload] = explode('.', $factory->createToken(['/global/feed']));
+        $claims = json_decode((string) base64_decode(strtr($payload, '-_', '+/'), true), true, 512, \JSON_THROW_ON_ERROR);
+        self::assertIsArray($claims);
+        self::assertSame('https://example.com', $claims['iss'] ?? null);
+        self::assertSame('https://example.com/.well-known/mercure', $claims['aud'] ?? null);
+
+        self::assertSame($this->hubBehind($container)->getCookieName(), $factory->createCookie('t')->getName());
     }
 
     /**

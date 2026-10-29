@@ -7,7 +7,8 @@ namespace Jul6Art\PushBundle\Mercure;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Mercure\HubInterface;
 use Symfony\Component\Mercure\Jwt\TokenFactoryInterface;
-use Symfony\Component\Mercure\Jwt\TokenProviderInterface;
+use Symfony\Component\Mercure\ProtocolVersion;
+use Symfony\Component\Mercure\RemoteHubInterface;
 use Symfony\Component\Mercure\Update;
 
 /**
@@ -48,7 +49,7 @@ use Symfony\Component\Mercure\Update;
  *   notification; subscribers will see the new state on their next
  *   datatable reload / page navigation.
  */
-final class BufferingHub implements HubInterface
+final class BufferingHub implements RemoteHubInterface
 {
     /** @var list<Update> */
     private array $buffer = [];
@@ -115,8 +116,16 @@ final class BufferingHub implements HubInterface
         return ['sent' => $sent, 'failed' => $failed];
     }
 
+    /**
+     * `mercure.hub.default` is a remote hub as soon as it has a URL, and mercure-bundle autowires
+     * `RemoteHubInterface` to it — that is, to this decorator. A FrankenPHP hub has no URL to give.
+     */
     public function getUrl(): string
     {
+        if (!$this->inner instanceof RemoteHubInterface) {
+            throw new \LogicException(\sprintf('The decorated hub (%s) is not a remote hub: it has no URL.', $this->inner::class));
+        }
+
         return $this->inner->getUrl();
     }
 
@@ -125,13 +134,18 @@ final class BufferingHub implements HubInterface
         return $this->inner->getPublicUrl();
     }
 
-    public function getProvider(): TokenProviderInterface
-    {
-        return $this->inner->getProvider();
-    }
-
     public function getFactory(): ?TokenFactoryInterface
     {
         return $this->inner->getFactory();
+    }
+
+    public function getProtocolVersion(): ProtocolVersion
+    {
+        return $this->inner->getProtocolVersion();
+    }
+
+    public function getCookieName(): string
+    {
+        return $this->inner->getCookieName();
     }
 }

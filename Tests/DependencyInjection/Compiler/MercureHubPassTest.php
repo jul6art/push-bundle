@@ -10,6 +10,7 @@ use Jul6Art\PushBundle\Mercure\EntityChangePublisher;
 use Jul6Art\PushBundle\Mercure\FeedTopicResolverInterface;
 use Jul6Art\PushBundle\Mercure\GlobalFeedTopicResolver;
 use Jul6Art\PushBundle\Mercure\MercureDrainListener;
+use Jul6Art\PushBundle\Mercure\SubscriberCookieFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
@@ -49,7 +50,7 @@ final class MercureHubPassTest extends TestCase
 
         new MercureHubPass()->process($container);
 
-        foreach ([EntityChangePublisher::class, BufferingHub::class, MercureDrainListener::class, GlobalFeedTopicResolver::class] as $service) {
+        foreach ([EntityChangePublisher::class, BufferingHub::class, MercureDrainListener::class, GlobalFeedTopicResolver::class, SubscriberCookieFactory::class] as $service) {
             self::assertFalse($container->hasDefinition($service), \sprintf('%s doit disparaître.', $service));
         }
 
@@ -69,7 +70,7 @@ final class MercureHubPassTest extends TestCase
     {
         $container = new ContainerBuilder();
 
-        foreach ([EntityChangePublisher::class, BufferingHub::class, MercureDrainListener::class, GlobalFeedTopicResolver::class] as $service) {
+        foreach ([EntityChangePublisher::class, BufferingHub::class, MercureDrainListener::class, GlobalFeedTopicResolver::class, SubscriberCookieFactory::class] as $service) {
             $container->setDefinition($service, new Definition(\stdClass::class));
         }
 

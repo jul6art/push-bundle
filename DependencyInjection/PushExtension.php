@@ -24,7 +24,6 @@ use Symfony\Component\DependencyInjection\Extension\PrependExtensionInterface;
 use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
 use Symfony\Component\DependencyInjection\Reference;
 use Symfony\Component\HttpKernel\KernelEvents;
-use Symfony\Component\Mercure\Jwt\LcobucciFactory;
 use Symfony\Component\Mercure\Update;
 use Twig\Extension\AbstractExtension;
 
@@ -141,27 +140,19 @@ class PushExtension extends Extension implements PrependExtensionInterface
     }
 
     /**
-     * Pas de secret, pas de fabrique : signer un jeton d'abonnement avec autre chose que le
-     * secret du hub produit un jeton que le hub rejette, ce qui se lit « le temps réel ne
-     * marche pas » et non « la configuration est fausse ».
+     * Le jeton d'abonnement est signé par la fabrique du hub, avec ses claims (`iss`, `aud`,
+     * `sub`, `client_id`) et le nom de cookie qu'il lit : un second secret ou un second jeu de
+     * claims, ici, finirait par diverger de ceux du hub, et un jeton que le hub rejette se lit
+     * « le temps réel ne marche pas », pas « la configuration est fausse ». Sans hub, le
+     * compiler pass retire le service.
      *
      * @param array<mixed> $config
      */
     private function registerSubscriberCookieFactory(ContainerBuilder $container, array $config): void
     {
-        $secret = $config['jwt_secret'] ?? null;
-
-        if (!\is_string($secret) || '' === $secret) {
-            return;
-        }
-
-        $container->register('jul6art_push.mercure.token_factory', LcobucciFactory::class)
-            ->setArguments([$secret]);
-
         $container->register(SubscriberCookieFactory::class, SubscriberCookieFactory::class)
             ->setArguments([
-                new Reference('jul6art_push.mercure.token_factory'),
-                $config['cookie_name'] ?? 'mercureAuthorization',
+                new Reference('mercure.hub.default'),
                 $config['cookie_path'] ?? '/.well-known/mercure',
                 $config['token_lifetime'] ?? 3600,
                 false !== ($config['cookie_secure'] ?? true),
