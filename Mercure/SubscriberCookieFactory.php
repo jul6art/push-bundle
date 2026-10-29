@@ -68,16 +68,22 @@ final readonly class SubscriberCookieFactory
     }
 
     /**
-     * @param list<string> $topics topics the subscriber is allowed to listen to, matched exactly
-     *                             (`*` matches every topic)
+     * @param list<string> $topics   topics the subscriber is allowed to listen to, matched exactly
+     *                               (`*` matches every topic)
+     * @param list<string> $patterns URL Patterns it is allowed to listen to (`/organizations/:id/feed`):
+     *                               Mercure 1.0's replacement for URI templates, which a 1.x hub would
+     *                               compare letter by letter. The subscriber listens with
+     *                               `match_urlpattern=`
      */
-    public function createToken(array $topics): string
+    public function createToken(array $topics, array $patterns = []): string
     {
         $factory = $this->hub->getFactory()
             ?? throw new \LogicException('The Mercure hub signs no token: configure "mercure.hubs.<name>.jwt" (its secret, and the "iss", "aud", "sub" and "client_id" claims).');
 
+        $matchers = array_filter(['exact' => $topics, 'urlpattern' => $patterns], static fn (array $list): bool => [] !== $list);
+
         return $factory->create(
-            [new Grant([Grant::ACTION_SUBSCRIBE], $topics)],
+            [] === $matchers ? [] : [new Grant([Grant::ACTION_SUBSCRIBE], $matchers)],
             ['exp' => new \DateTimeImmutable(\sprintf('+%d seconds', $this->lifetime))],
         );
     }

@@ -36,6 +36,22 @@ final class SubscriberCookieFactoryTest extends TestCase
     }
 
     /**
+     * Mercure 1.0 n'a plus de modèle d'URI (`{id}`) : un abonnement à toute une famille de canaux
+     * s'écrit en URL Pattern (`:id`), accordé comme tel — sinon le hub le compare à la lettre et
+     * ne transmet rien.
+     */
+    public function testAPatternIsGrantedAsAUrlPattern(): void
+    {
+        $token = $this->factory()->createToken(['/platform/feed'], ['/organizations/:id/feed']);
+
+        self::assertSame([[
+            'type' => 'https://mercure.rocks/authorization-detail',
+            'actions' => ['subscribe'],
+            'topics' => [['match' => '/platform/feed'], ['match' => '/organizations/:id/feed', 'match_type' => 'urlpattern']],
+        ]], $this->payload($token)['authorization_details']);
+    }
+
+    /**
      * Un abonné ne publie pas : aucune entrée du jeton ne porte l'action `publish`.
      */
     public function testASubscriberIsNeverGrantedPublishRights(): void
@@ -136,11 +152,11 @@ final class SubscriberCookieFactoryTest extends TestCase
     }
 
     /**
-     * @return array{iss: string, aud: string, sub: string, client_id: string, exp: int, authorization_details: list<array{type: string, actions: list<string>, topics: list<array{match: string}>}>}
+     * @return array{iss: string, aud: string, sub: string, client_id: string, exp: int, authorization_details: list<array{type: string, actions: list<string>, topics: list<array{match: string, match_type?: string}>}>}
      */
     private function payload(string $token): array
     {
-        /** @var array{iss: string, aud: string, sub: string, client_id: string, exp: int, authorization_details: list<array{type: string, actions: list<string>, topics: list<array{match: string}>}>} $payload */
+        /** @var array{iss: string, aud: string, sub: string, client_id: string, exp: int, authorization_details: list<array{type: string, actions: list<string>, topics: list<array{match: string, match_type?: string}>}>} $payload */
         $payload = $this->decode(explode('.', $token)[1]);
 
         return $payload;

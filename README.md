@@ -388,6 +388,18 @@ response so the front end subscribes to exactly what the token allows (`match=<t
 > ⚠️ **`*` is a wildcard on both sides.** A grant of `['*']` covers every topic, present and
 > future. Convenient for an administrator, a tenant leak for anyone else.
 
+A family of channels — every organisation's feed — is a **URL Pattern** since Mercure 1.0, which
+dropped URI templates: `/organizations/:id/feed`, not `{id}`. Grant it as one (3.1), and let the
+front end listen with `match_urlpattern=`:
+
+```php
+$token = $factory->createToken(['/platform/feed'], patterns: ['/organizations/:id/feed']);
+$response = new JsonResponse(['subscribed' => ['/platform/feed'], 'patterns' => ['/organizations/:id/feed']]);
+```
+
+A relative pattern resolves against the hub's base URL — its pinned `resource_identifier` — exactly
+like the relative topics it is compared with.
+
 > ⚠️ **Serve the hub under the application's own host.** The cookie is host-only and
 > `SameSite=Strict`: a browser never sends it to a hub on another site. Relay
 > `/.well-known/mercure` under the application's domain.
