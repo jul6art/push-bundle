@@ -359,8 +359,8 @@ mercure:
                 secret: '%env(MERCURE_JWT_SECRET)%'
                 publish: ['*']
                 claims:
-                    iss: '%env(MERCURE_ISSUER)%'      # an issuer the hub trusts (its `issuer` block)
-                    aud: '%env(MERCURE_AUDIENCE)%'    # the hub's `resource_identifier`
+                    iss: '%env(MERCURE_JWT_ISSUER)%'      # an issuer the hub trusts (its `issuer` block)
+                    aud: '%env(MERCURE_JWT_AUDIENCE)%'    # the hub's `resource_identifier`
                     sub: my-app
                     client_id: my-app
 ```
