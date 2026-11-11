@@ -58,18 +58,18 @@ final class SubscriberCookieFactoryTest extends TestCase
      */
     public function testWithAPrefixTheTokenGrantsTheApplicationsTopicsOnly(): void
     {
-        $factory = $this->factory(prefix: '/cereezer');
+        $factory = $this->factory(prefix: '/shop');
         $token = $factory->createToken(['/platform/feed'], ['/organizations/:id/feed']);
 
-        self::assertSame([['match' => '/cereezer/platform/feed'], ['match' => '/cereezer/organizations/:id/feed', 'match_type' => 'urlpattern']], $this->payload($token)['authorization_details'][0]['topics']);
-        self::assertSame(['topics' => ['/cereezer/platform/feed'], 'patterns' => ['/cereezer/organizations/:id/feed']], $factory->subscription(['/platform/feed'], ['/organizations/:id/feed']));
+        self::assertSame([['match' => '/shop/platform/feed'], ['match' => '/shop/organizations/:id/feed', 'match_type' => 'urlpattern']], $this->payload($token)['authorization_details'][0]['topics']);
+        self::assertSame(['topics' => ['/shop/platform/feed'], 'patterns' => ['/shop/organizations/:id/feed']], $factory->subscription(['/platform/feed'], ['/organizations/:id/feed']));
     }
 
     public function testWithAPrefixTheWildcardIsEveryTopicOfTheApplication(): void
     {
-        $token = $this->factory(prefix: '/superp')->createToken(['*']);
+        $token = $this->factory(prefix: '/blog')->createToken(['*']);
 
-        self::assertSame([['match' => '/superp/*', 'match_type' => 'urlpattern']], $this->payload($token)['authorization_details'][0]['topics']);
+        self::assertSame([['match' => '/blog/*', 'match_type' => 'urlpattern']], $this->payload($token)['authorization_details'][0]['topics']);
     }
 
     /**

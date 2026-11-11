@@ -17,17 +17,32 @@ final class TopicPrefixTest extends TestCase
 {
     public function testATopicIsPrefixedOnce(): void
     {
-        $prefix = new TopicPrefix('/cereezer');
+        $prefix = new TopicPrefix('/shop');
 
-        self::assertSame('/cereezer/organizations/7/feed', $prefix->apply('/organizations/7/feed'));
-        self::assertSame('/cereezer/organizations/7/feed', $prefix->apply('/cereezer/organizations/7/feed'), 'Idempotent: a topic already prefixed stays as it is.');
-        self::assertSame('/cereezer/feed', $prefix->apply('feed'));
-        self::assertSame(['/cereezer/a', '/cereezer/b'], $prefix->applyAll(['/a', '/b']));
+        self::assertSame('/shop/organizations/7/feed', $prefix->apply('/organizations/7/feed'));
+        self::assertSame('/shop/organizations/7/feed', $prefix->apply('/shop/organizations/7/feed'), 'Idempotent: a topic already prefixed stays as it is.');
+        self::assertSame('/shop/feed', $prefix->apply('feed'));
+        self::assertSame(['/shop/a', '/shop/b'], $prefix->applyAll(['/a', '/b']));
     }
 
     public function testAPrefixThatIsOnlyTheStartOfASegmentIsNotTheApplications(): void
     {
-        self::assertSame('/cereezer/cereezer-mobile/feed', new TopicPrefix('/cereezer')->apply('/cereezer-mobile/feed'));
+        self::assertSame('/shop/shop-mobile/feed', new TopicPrefix('/shop')->apply('/shop-mobile/feed'));
+    }
+
+    /**
+     * Mercure recommande des IRI : `https://example.org/organizations/7/feed` garde son schéma et son hôte, et
+     * prend le préfixe au début de son chemin — jamais `/shop/https://…`, qu'aucun abonné n'écouterait.
+     */
+    public function testAnAbsoluteIriTakesThePrefixAtTheStartOfItsPath(): void
+    {
+        $prefix = new TopicPrefix('/shop');
+
+        self::assertSame('https://example.org/shop/organizations/7/feed', $prefix->apply('https://example.org/organizations/7/feed'));
+        self::assertSame('https://example.org/shop/organizations/7/feed', $prefix->apply('https://example.org/shop/organizations/7/feed'), 'Idempotent on an IRI too.');
+        self::assertSame('https://example.org/shop', $prefix->apply('https://example.org'));
+        self::assertSame('urn://example/shop/a', $prefix->apply('urn://example/a'));
+        self::assertSame(['topics' => ['https://example.org/shop/servers'], 'patterns' => ['https://example.org/shop/organizations/:slug/alerts']], $prefix->subscription(['https://example.org/servers'], ['https://example.org/organizations/:slug/alerts']));
     }
 
     public function testWithoutAPrefixNothingChanges(): void
@@ -41,14 +56,14 @@ final class TopicPrefixTest extends TestCase
 
     public function testATrailingSlashIsNotPartOfThePrefix(): void
     {
-        self::assertSame('/superp', new TopicPrefix('/superp/')->prefix());
+        self::assertSame('/blog', new TopicPrefix('/blog/')->prefix());
     }
 
     public function testASubscriptionIsPrefixedOnBothItsTopicsAndItsPatterns(): void
     {
         self::assertSame(
-            ['topics' => ['/cereezer/platform/feed'], 'patterns' => ['/cereezer/organizations/:id/feed']],
-            new TopicPrefix('/cereezer')->subscription(['/platform/feed'], ['/organizations/:id/feed']),
+            ['topics' => ['/shop/platform/feed'], 'patterns' => ['/shop/organizations/:id/feed']],
+            new TopicPrefix('/shop')->subscription(['/platform/feed'], ['/organizations/:id/feed']),
         );
     }
 
@@ -58,17 +73,17 @@ final class TopicPrefixTest extends TestCase
      */
     public function testTheWildcardBecomesEveryTopicOfTheApplication(): void
     {
-        self::assertSame(['topics' => [], 'patterns' => ['/superp/*']], new TopicPrefix('/superp')->subscription(['*']));
-        self::assertSame(['topics' => ['/superp/a'], 'patterns' => ['/superp/*']], new TopicPrefix('/superp')->subscription(['/a', '*'], ['*']));
+        self::assertSame(['topics' => [], 'patterns' => ['/blog/*']], new TopicPrefix('/blog')->subscription(['*']));
+        self::assertSame(['topics' => ['/blog/a'], 'patterns' => ['/blog/*']], new TopicPrefix('/blog')->subscription(['/a', '*'], ['*']));
     }
 
     public function testAnUpdateIsPublishedOnThePrefixedTopics(): void
     {
-        $update = new TopicPrefix('/devingame')->update(['/players/3', '/players/4'], '{}', true);
+        $update = new TopicPrefix('/arcade')->update(['/players/3', '/players/4'], '{}', true);
 
-        self::assertSame(['/devingame/players/3', '/devingame/players/4'], $update->getTopics());
+        self::assertSame(['/arcade/players/3', '/arcade/players/4'], $update->getTopics());
         self::assertSame('{}', $update->getData());
         self::assertTrue($update->isPrivate());
-        self::assertSame(['/devingame/players/3'], new TopicPrefix('/devingame')->update('/players/3')->getTopics());
+        self::assertSame(['/arcade/players/3'], new TopicPrefix('/arcade')->update('/players/3')->getTopics());
     }
 }

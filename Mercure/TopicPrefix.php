@@ -7,8 +7,8 @@ namespace Jul6Art\PushBundle\Mercure;
 use Symfony\Component\Mercure\Update;
 
 /**
- * The application's own corner of a shared Mercure hub: `/cereezer/organizations/7/feed` rather
- * than `/organizations/7/feed` (`push.mercure.topic_prefix: '/cereezer'`).
+ * The application's own corner of a shared Mercure hub: `/shop/organizations/7/feed` rather
+ * than `/organizations/7/feed` (`push.mercure.topic_prefix: '/shop'`).
  *
  * ⚠️ **Several applications on one hub publish the same topic names.** Without a prefix, a subscriber
  * of one application granted `/organizations/7/feed` receives what organisation 7 of EVERY
@@ -40,13 +40,28 @@ final readonly class TopicPrefix
         return $this->prefix;
     }
 
+    /**
+     * A path topic (`/organizations/7/feed`) takes the prefix in front; an absolute IRI
+     * (`https://example.org/organizations/7/feed`, what Mercure recommends) takes it at the start of its
+     * path — `https://example.org/shop/organizations/7/feed` — and keeps its scheme and host.
+     */
     public function apply(string $topic): string
     {
-        if ('' === $this->prefix || '*' === $topic || $topic === $this->prefix || str_starts_with($topic, $this->prefix.'/')) {
+        if ('' === $this->prefix || '*' === $topic) {
             return $topic;
         }
 
-        return $this->prefix.(str_starts_with($topic, '/') ? '' : '/').$topic;
+        $origin = '';
+        $path = $topic;
+        if (1 === preg_match('#^([a-z][a-z0-9+.-]*://[^/?\#]*)(.*)$#i', $topic, $iri)) {
+            [, $origin, $path] = $iri;
+        }
+
+        if ($path === $this->prefix || str_starts_with($path, $this->prefix.'/')) {
+            return $topic;
+        }
+
+        return $origin.$this->prefix.('' === $path || str_starts_with($path, '/') ? '' : '/').$path;
     }
 
     /**

@@ -431,16 +431,16 @@ what the others publish on it. Give each application its corner of the hub:
 ```yaml
 push:
     mercure:
-        topic_prefix: '/cereezer'
+        topic_prefix: '/shop'
 ```
 
 The bundle applies it in one place per side, and your resolvers keep returning topics without it:
 
-- `EntityChangePublisher` publishes on `/cereezer/organizations/7/feed`, and echoes that topic in
+- `EntityChangePublisher` publishes on `/shop/organizations/7/feed`, and echoes that topic in
   the payload — a front end filtering on `payload.topic` compares the full topic;
 - `SubscriberCookieFactory::createToken()` grants the prefixed topics and patterns, and
   `subscription()` gives the same lists for the response body;
-- a grant of `*` becomes the pattern `/cereezer/*`: every topic of THIS application, not of the
+- a grant of `*` becomes the pattern `/shop/*`: every topic of THIS application, not of the
   hub;
 - what you publish yourself goes through `Mercure\TopicPrefix::update()`, the prefixed equivalent
   of `new Update(…)`:
@@ -449,7 +449,9 @@ The bundle applies it in one place per side, and your resolvers keep returning t
 $this->hub->publish($this->topics->update('/users/'.$user->getId().'/notifications', $json, private: true));
 ```
 
-Prefixing is idempotent: a topic that already carries the prefix is left as it is. Empty — the
+A topic written as an absolute IRI keeps its scheme and host and takes the prefix at the start of its
+path: `https://example.org/shop/organizations/7/feed` (3.2.1). Prefixing is idempotent: a topic that
+already carries the prefix is left as it is. Empty — the
 default — keeps 3.1's behaviour, right only for an application alone on its hub.
 
 > ⚠️ **The hub's key stays shared.** The prefix keeps each application's subscribers on its own

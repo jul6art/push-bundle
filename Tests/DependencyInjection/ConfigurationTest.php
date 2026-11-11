@@ -70,16 +70,16 @@ final class ConfigurationTest extends TestCase
     }
 
     /**
-     * Le préfixe est un chemin, sans barre finale : `/cereezer`. Une barre finale doublerait la barre
+     * Le préfixe est un chemin, sans barre finale : `/shop`. Une barre finale doublerait la barre
      * de chaque sujet, et un nom sans barre ne serait le début d'aucun sujet.
      */
     public function testATopicPrefixIsAPathWithoutATrailingSlash(): void
     {
-        $mercure = $this->process([['mercure' => ['topic_prefix' => '/cereezer']]])['mercure'] ?? null;
+        $mercure = $this->process([['mercure' => ['topic_prefix' => '/shop']]])['mercure'] ?? null;
         self::assertIsArray($mercure);
-        self::assertSame('/cereezer', $mercure['topic_prefix'] ?? null);
+        self::assertSame('/shop', $mercure['topic_prefix'] ?? null);
 
-        foreach (['cereezer', '/cereezer/', '/a b'] as $invalid) {
+        foreach (['shop', '/shop/', '/a b'] as $invalid) {
             try {
                 $this->process([['mercure' => ['topic_prefix' => $invalid]]]);
                 self::fail(\sprintf('"%s" was accepted as a topic prefix.', $invalid));
