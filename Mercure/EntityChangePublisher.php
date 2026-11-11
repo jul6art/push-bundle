@@ -44,6 +44,7 @@ final class EntityChangePublisher
         private readonly FeedTopicResolverInterface $topicResolver,
         private readonly ?Security $security = null,
         private readonly ?IriConverterInterface $iriConverter = null,
+        private readonly TopicPrefix $topicPrefix = new TopicPrefix(),
     ) {
     }
 
@@ -310,9 +311,14 @@ final class EntityChangePublisher
         }
     }
 
+    /**
+     * The resolver's topic, in the application's corner of the hub ({@see TopicPrefix}): the one
+     * place this side applies the prefix, so the batch key, the payload's `topic` and the update
+     * all carry it.
+     */
     private function resolveTopic(object $entity): string
     {
-        return $this->topicResolver->resolveTopic($entity);
+        return $this->topicPrefix->apply($this->topicResolver->resolveTopic($entity));
     }
 
     private function buildEtag(?string $iri, string $type, int|string|null $id, string $action): string

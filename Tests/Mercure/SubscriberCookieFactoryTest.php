@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Jul6Art\PushBundle\Tests\Mercure;
 
 use Jul6Art\PushBundle\Mercure\SubscriberCookieFactory;
+use Jul6Art\PushBundle\Mercure\TopicPrefix;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Cookie;
@@ -49,6 +50,26 @@ final class SubscriberCookieFactoryTest extends TestCase
             'actions' => ['subscribe'],
             'topics' => [['match' => '/platform/feed'], ['match' => '/organizations/:id/feed', 'match_type' => 'urlpattern']],
         ]], $this->payload($token)['authorization_details']);
+    }
+
+    /**
+     * Sur un hub partagé, le jeton n'accorde que les sujets de l'application : le préfixe est
+     * appliqué ici, une fois, et la liste rendue au navigateur est la même que celle du jeton.
+     */
+    public function testWithAPrefixTheTokenGrantsTheApplicationsTopicsOnly(): void
+    {
+        $factory = $this->factory(prefix: '/cereezer');
+        $token = $factory->createToken(['/platform/feed'], ['/organizations/:id/feed']);
+
+        self::assertSame([['match' => '/cereezer/platform/feed'], ['match' => '/cereezer/organizations/:id/feed', 'match_type' => 'urlpattern']], $this->payload($token)['authorization_details'][0]['topics']);
+        self::assertSame(['topics' => ['/cereezer/platform/feed'], 'patterns' => ['/cereezer/organizations/:id/feed']], $factory->subscription(['/platform/feed'], ['/organizations/:id/feed']));
+    }
+
+    public function testWithAPrefixTheWildcardIsEveryTopicOfTheApplication(): void
+    {
+        $token = $this->factory(prefix: '/superp')->createToken(['*']);
+
+        self::assertSame([['match' => '/superp/*', 'match_type' => 'urlpattern']], $this->payload($token)['authorization_details'][0]['topics']);
     }
 
     /**
@@ -128,7 +149,7 @@ final class SubscriberCookieFactoryTest extends TestCase
         self::assertFalse($this->factory(secure: false, cookieName: 'mercure_access_token')->createCookie('a-token')->isSecure());
     }
 
-    private function factory(int $lifetime = 3600, bool $secure = true, ?string $cookieName = null): SubscriberCookieFactory
+    private function factory(int $lifetime = 3600, bool $secure = true, ?string $cookieName = null, string $prefix = ''): SubscriberCookieFactory
     {
         $tokens = new DefaultClaimsTokenFactory(
             new LcobucciFactory('a-secret-that-is-long-enough-for-hmac-sha256'),
@@ -140,6 +161,7 @@ final class SubscriberCookieFactoryTest extends TestCase
             '/.well-known/mercure',
             $lifetime,
             $secure,
+            new TopicPrefix($prefix),
         );
     }
 

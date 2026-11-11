@@ -12,6 +12,7 @@ use Jul6Art\PushBundle\Mercure\FeedTopicResolverInterface;
 use Jul6Art\PushBundle\Mercure\GlobalFeedTopicResolver;
 use Jul6Art\PushBundle\Mercure\MercureDrainListener;
 use Jul6Art\PushBundle\Mercure\SubscriberCookieFactory;
+use Jul6Art\PushBundle\Mercure\TopicPrefix;
 use Jul6Art\PushBundle\Message\EntityAsyncEvent;
 use Jul6Art\PushBundle\Twig\JwtTokenExtension;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
@@ -76,12 +77,20 @@ class PushExtension extends Extension implements PrependExtensionInterface
 
         $container->setAlias(FeedTopicResolverInterface::class, $topicResolver)->setPublic(true);
 
+        // Registered with or without a hub: an application's own publisher asks for it alongside
+        // the hub, and the prefix is a piece of configuration, not a connection.
+        $prefix = $config['topic_prefix'] ?? '';
+        $container->register(TopicPrefix::class, TopicPrefix::class)
+            ->setArguments([\is_string($prefix) ? $prefix : ''])
+            ->setPublic(true);
+
         $container->register(EntityChangePublisher::class, EntityChangePublisher::class)
             ->setArguments([
                 new Reference('mercure.hub.default'),
                 new Reference(FeedTopicResolverInterface::class),
                 new Reference('security.helper', ContainerInterface::NULL_ON_INVALID_REFERENCE),
                 new Reference('api_platform.iri_converter', ContainerInterface::NULL_ON_INVALID_REFERENCE),
+                new Reference(TopicPrefix::class),
             ])
             ->addTag('doctrine.event_listener', ['event' => Events::onFlush])
             ->addTag('doctrine.event_listener', ['event' => Events::postFlush])
@@ -156,6 +165,7 @@ class PushExtension extends Extension implements PrependExtensionInterface
                 $config['cookie_path'] ?? '/.well-known/mercure',
                 $config['token_lifetime'] ?? 3600,
                 false !== ($config['cookie_secure'] ?? true),
+                new Reference(TopicPrefix::class),
             ])
             ->setPublic(true);
     }

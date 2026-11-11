@@ -371,9 +371,10 @@ mercure:
 public function __invoke(SubscriberCookieFactory $factory): Response
 {
     $topics = $this->topicsFor($this->getUser());          // ← your authorisation decision
+    $subscription = $factory->subscription($topics);       // ← prefixed, as the token grants them (3.2)
     $token = $factory->createToken($topics);
 
-    $response = new JsonResponse(['subscribed' => $topics]);
+    $response = new JsonResponse(['subscribed' => $subscription['topics'], 'patterns' => $subscription['patterns']]);
     $response->headers->setCookie($factory->createCookie($token));
 
     return $response;
@@ -420,6 +421,39 @@ plain-http workstation, with a hub `cookie_name` without the `__Secure-` prefix.
   must be a Mercure 1.x hub — or a 1.x hub in `protocol_version_compatibility 8` while other
   applications still speak 0.x.
 - Subscribers: `topic=` becomes `match=`, and the token travels in the cookie only.
+
+### Several applications on one hub (3.2)
+
+Applications sharing a hub publish the same topic names — `/organizations/7/feed` is organisation 7
+of EVERY database. Without a prefix, a subscriber granted that topic in one application receives
+what the others publish on it. Give each application its corner of the hub:
+
+```yaml
+push:
+    mercure:
+        topic_prefix: '/cereezer'
+```
+
+The bundle applies it in one place per side, and your resolvers keep returning topics without it:
+
+- `EntityChangePublisher` publishes on `/cereezer/organizations/7/feed`, and echoes that topic in
+  the payload — a front end filtering on `payload.topic` compares the full topic;
+- `SubscriberCookieFactory::createToken()` grants the prefixed topics and patterns, and
+  `subscription()` gives the same lists for the response body;
+- a grant of `*` becomes the pattern `/cereezer/*`: every topic of THIS application, not of the
+  hub;
+- what you publish yourself goes through `Mercure\TopicPrefix::update()`, the prefixed equivalent
+  of `new Update(…)`:
+
+```php
+$this->hub->publish($this->topics->update('/users/'.$user->getId().'/notifications', $json, private: true));
+```
+
+Prefixing is idempotent: a topic that already carries the prefix is left as it is. Empty — the
+default — keeps 3.1's behaviour, right only for an application alone on its hub.
+
+> ⚠️ **The hub's key stays shared.** The prefix keeps each application's subscribers on its own
+> topics; it does not stop a compromised application from publishing on another one's.
 
 ### Messenger routing and buffering are alternatives, not layers
 

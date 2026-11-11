@@ -23,9 +23,10 @@ use Symfony\Component\Mercure\Jwt\Grant;
  * public function __invoke(SubscriberCookieFactory $factory): Response
  * {
  *     $topics = $this->topicsFor($this->getUser());          // ← the application's policy
+ *     $subscription = $factory->subscription($topics);       // ← prefixed, as the token grants them
  *     $token = $factory->createToken($topics);
  *
- *     $response = new JsonResponse(['subscribed' => $topics, 'token' => $token]);
+ *     $response = new JsonResponse(['subscribed' => $subscription['topics'], 'patterns' => $subscription['patterns']]);
  *     $response->headers->setCookie($factory->createCookie($token));
  *
  *     return $response;
@@ -64,7 +65,22 @@ final readonly class SubscriberCookieFactory
         private string $cookiePath = '/.well-known/mercure',
         private int $lifetime = 3600,
         private bool $cookieSecure = true,
+        private TopicPrefix $topicPrefix = new TopicPrefix(),
     ) {
+    }
+
+    /**
+     * The topics and the patterns to hand back to the browser, prefixed as the token grants them
+     * ({@see TopicPrefix::subscription()}): the claim and the `EventSource` must agree.
+     *
+     * @param list<string> $topics
+     * @param list<string> $patterns
+     *
+     * @return array{topics: list<string>, patterns: list<string>}
+     */
+    public function subscription(array $topics, array $patterns = []): array
+    {
+        return $this->topicPrefix->subscription($topics, $patterns);
     }
 
     /**
@@ -80,6 +96,7 @@ final readonly class SubscriberCookieFactory
         $factory = $this->hub->getFactory()
             ?? throw new \LogicException('The Mercure hub signs no token: configure "mercure.hubs.<name>.jwt" (its secret, and the "iss", "aud", "sub" and "client_id" claims).');
 
+        ['topics' => $topics, 'patterns' => $patterns] = $this->topicPrefix->subscription($topics, $patterns);
         $matchers = array_filter(['exact' => $topics, 'urlpattern' => $patterns], static fn (array $list): bool => [] !== $list);
 
         return $factory->create(

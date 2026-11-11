@@ -11,6 +11,7 @@ use Jul6Art\PushBundle\Mercure\FeedTopicResolverInterface;
 use Jul6Art\PushBundle\Mercure\GlobalFeedTopicResolver;
 use Jul6Art\PushBundle\Mercure\MercureDrainListener;
 use Jul6Art\PushBundle\Mercure\SubscriberCookieFactory;
+use Jul6Art\PushBundle\Mercure\TopicPrefix;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
@@ -55,6 +56,7 @@ final class MercureHubPassTest extends TestCase
         }
 
         self::assertFalse($container->hasAlias(FeedTopicResolverInterface::class));
+        self::assertTrue($container->hasDefinition(TopicPrefix::class), 'The prefix is configuration, not a connection: the code that asks for it still compiles.');
     }
 
     public function testThePassIsIdempotentOnAnEmptyContainer(): void
@@ -75,6 +77,7 @@ final class MercureHubPassTest extends TestCase
         }
 
         $container->setAlias(FeedTopicResolverInterface::class, GlobalFeedTopicResolver::class);
+        $container->setDefinition(TopicPrefix::class, new Definition(TopicPrefix::class, ['/app']));
 
         return $container;
     }
