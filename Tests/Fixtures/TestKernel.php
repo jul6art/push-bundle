@@ -12,6 +12,7 @@ use Jul6Art\PushBundle\EventListener\AsyncEventListener;
 use Jul6Art\PushBundle\MessageHandler\EntityAsyncEventHandler;
 use Jul6Art\PushBundle\PushBundle;
 use Jul6Art\PushBundle\Service\Pusher;
+use Jul6Art\PushBundle\Tests\Fixtures\Mercure\AccountSubscriptionProvider;
 use Symfony\Bundle\FrameworkBundle\FrameworkBundle;
 use Symfony\Bundle\MercureBundle\MercureBundle;
 use Symfony\Bundle\SecurityBundle\SecurityBundle;
@@ -103,6 +104,8 @@ final class TestKernel extends Kernel
                     AsyncEventListener::class,
                     EntityAsyncEventHandler::class,
                     Pusher::class,
+                    // The subscriber endpoint's tests sign an account in, as a firewall would.
+                    'security.token_storage',
                 ];
 
                 foreach ($exposed as $id) {
@@ -167,6 +170,10 @@ final class TestKernel extends Kernel
         if ($this->withHub) {
             $this->configureMercure($container);
         }
+
+        // An application's subscription provider, named by `push.mercure.subscriber.provider` in the
+        // tests that need it (ADR-0001).
+        $container->register(AccountSubscriptionProvider::class, AccountSubscriptionProvider::class);
 
         $container->loadFromExtension('push', $this->pushConfig);
     }

@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace Jul6Art\PushBundle\DependencyInjection\Compiler;
 
+use Jul6Art\PushBundle\Controller\MercureTokenController;
 use Jul6Art\PushBundle\Mercure\BufferingHub;
 use Jul6Art\PushBundle\Mercure\EntityChangePublisher;
 use Jul6Art\PushBundle\Mercure\FeedTopicResolverInterface;
 use Jul6Art\PushBundle\Mercure\GlobalFeedTopicResolver;
 use Jul6Art\PushBundle\Mercure\MercureDrainListener;
 use Jul6Art\PushBundle\Mercure\SubscriberCookieFactory;
+use Jul6Art\PushBundle\Mercure\SubscriberTokenResponder;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 
@@ -34,10 +36,16 @@ final class MercureHubPass implements CompilerPassInterface
     public function process(ContainerBuilder $container): void
     {
         if ($container->has('mercure.hub.default')) {
+            // Le point d'entrée du jeton contrôle l'accès et lit le compte connecté : sans le
+            // composant de sécurité, il n'a ni l'un ni l'autre, et n'existe pas.
+            if (!$container->has('security.authorization_checker') || !$container->has('security.token_storage')) {
+                $container->removeDefinition(MercureTokenController::class);
+            }
+
             return;
         }
 
-        foreach ([EntityChangePublisher::class, BufferingHub::class, MercureDrainListener::class, GlobalFeedTopicResolver::class, SubscriberCookieFactory::class] as $service) {
+        foreach ([EntityChangePublisher::class, BufferingHub::class, MercureDrainListener::class, GlobalFeedTopicResolver::class, SubscriberCookieFactory::class, SubscriberTokenResponder::class, MercureTokenController::class] as $service) {
             $container->removeDefinition($service);
         }
 

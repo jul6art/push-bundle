@@ -34,9 +34,31 @@ final class ConfigurationTest extends TestCase
                 'token_lifetime' => 3600,
                 'cookie_path' => '/.well-known/mercure',
                 'cookie_secure' => true,
+                'subscriber' => [
+                    'provider' => null,
+                    'access' => 'IS_AUTHENTICATED_FULLY',
+                ],
             ],
             'routing' => [],
         ], $this->process([]));
+    }
+
+    /**
+     * The subscriber endpoint (ADR-0001): which account may call it is a written choice, never left
+     * blank — an empty attribute would be a question nobody asked `isGranted()`.
+     */
+    public function testTheSubscriberAccessIsNeverEmpty(): void
+    {
+        $this->expectException(InvalidConfigurationException::class);
+
+        $this->process([['mercure' => ['subscriber' => ['access' => '']]]]);
+    }
+
+    public function testTheSubscriberKeepsTheApplicationsProviderAndAccess(): void
+    {
+        $subscriber = $this->mercureDefaults([['mercure' => ['subscriber' => ['provider' => 'App\\Mercure\\SubscriptionProvider', 'access' => 'REALTIME_SUBSCRIBE']]]])['subscriber'] ?? null;
+
+        self::assertSame(['provider' => 'App\\Mercure\\SubscriptionProvider', 'access' => 'REALTIME_SUBSCRIBE'], $subscriber);
     }
 
     /**
@@ -129,11 +151,13 @@ final class ConfigurationTest extends TestCase
     }
 
     /**
+     * @param array<int, array<string, mixed>> $configs
+     *
      * @return array<mixed>
      */
-    private function mercureDefaults(): array
+    private function mercureDefaults(array $configs = []): array
     {
-        $mercure = $this->process([])['mercure'] ?? null;
+        $mercure = $this->process($configs)['mercure'] ?? null;
         self::assertIsArray($mercure);
 
         return $mercure;

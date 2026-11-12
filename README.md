@@ -365,26 +365,74 @@ mercure:
                     client_id: my-app
 ```
 
-```php
-#[Route('/organization/mercure-token', methods: ['GET'])]
-#[IsGranted('ROLE_USER')]
-public function __invoke(SubscriberCookieFactory $factory): Response
-{
-    $topics = $this->topicsFor($this->getUser());          // ← your authorisation decision
-    $subscription = $factory->subscription($topics);       // ← prefixed, as the token grants them (3.2)
-    $token = $factory->createToken($topics);
+#### The endpoint (3.3)
 
-    $response = new JsonResponse(['subscribed' => $subscription['topics'], 'patterns' => $subscription['patterns']]);
-    $response->headers->setCookie($factory->createCookie($token));
+The bundle ships the endpoint the browser calls before opening its `EventSource`
+(`Controller\MercureTokenController`): it sets the subscriber cookie and returns
+`{ "subscribed": [...], "patterns": [...] }`, prefixed as the token grants them. **It declares no
+route** — route to it under the name and path your front end uses (admin-bundle's
+`admin.mercure.token_route` names it):
 
-    return $response;
-}
+```yaml
+# config/routes/push.yaml
+admin_mercure_token:
+    path: /admin/mercure-token
+    controller: Jul6Art\PushBundle\Controller\MercureTokenController
+    methods: [GET]
+```
+
+```yaml
+# config/packages/push.yaml
+push:
+    mercure:
+        subscriber:
+            provider: App\Mercure\SubscriptionProvider   # default: GlobalFeedSubscriptionProvider
+            access: IS_AUTHENTICATED_FULLY               # default; any attribute isGranted() takes
 ```
 
 **Which topics an account may subscribe to stays in your application** — it is an authorisation
-decision and the token's grant is what enforces it on the hub. Hand the same list back in the
-response so the front end subscribes to exactly what the token allows (`match=<topic>`, and
-`withCredentials: true` so the cookie goes along); deriving it twice is how the two drift.
+decision and the token's grant is what enforces it on the hub. Write it as a provider:
+
+```php
+final readonly class SubscriptionProvider implements SubscriptionProviderInterface
+{
+    public function subscriptionFor(UserInterface $user): Subscription
+    {
+        \assert($user instanceof User);
+
+        return $user->getOrganization() instanceof Organization
+            ? new Subscription([OrganizationFeedTopicResolver::topicFor($user->getOrganization())])
+            : new Subscription(['/platform/feed'], patterns: ['/organizations/:id/feed']);
+    }
+}
+```
+
+Derive the list from the account, never from a request parameter, and throw an
+`AccessDeniedException` when it may hear nothing. The default, `GlobalFeedSubscriptionProvider`,
+gives every account `/global/feed`: right for a single tenant only. The endpoint is registered with
+a hub and the security component; `access` may be `IS_AUTHENTICATED` (remember-me sessions too), a
+role or a voter attribute.
+
+An endpoint of another shape — a second area with its own access rule, a body that carries more —
+keeps its own controller and lets `Mercure\SubscriberTokenResponder` do the rest:
+
+```php
+return $responder->respond(new Subscription($topics, $patterns), ['hubUrl' => $this->hubUrl]);
+```
+
+The extra keys never replace `subscribed` or `patterns`. Doing it by hand with the factory:
+
+```php
+$subscription = $factory->subscription($topics);       // ← prefixed, as the token grants them (3.2)
+$token = $factory->createToken($topics);
+
+$response = new JsonResponse(['subscribed' => $subscription['topics'], 'patterns' => $subscription['patterns']]);
+$response->headers->setCookie($factory->createCookie($token));
+```
+
+Hand the same list back in the response so the front end subscribes to exactly what the token allows
+(`match=<topic>`, `match_urlpattern=<pattern>`, and `withCredentials: true` so the cookie goes
+along); deriving it twice is how the two drift.
 
 > ⚠️ **`*` is a wildcard on both sides.** A grant of `['*']` covers every topic, present and
 > future. Convenient for an administrator, a tenant leak for anyone else.

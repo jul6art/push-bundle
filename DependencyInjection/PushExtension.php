@@ -6,12 +6,16 @@ namespace Jul6Art\PushBundle\DependencyInjection;
 
 use Doctrine\ORM\Events;
 use Jul6Art\CoreBundle\CoreBundle;
+use Jul6Art\PushBundle\Controller\MercureTokenController;
 use Jul6Art\PushBundle\Mercure\BufferingHub;
 use Jul6Art\PushBundle\Mercure\EntityChangePublisher;
 use Jul6Art\PushBundle\Mercure\FeedTopicResolverInterface;
+use Jul6Art\PushBundle\Mercure\GlobalFeedSubscriptionProvider;
 use Jul6Art\PushBundle\Mercure\GlobalFeedTopicResolver;
 use Jul6Art\PushBundle\Mercure\MercureDrainListener;
 use Jul6Art\PushBundle\Mercure\SubscriberCookieFactory;
+use Jul6Art\PushBundle\Mercure\SubscriberTokenResponder;
+use Jul6Art\PushBundle\Mercure\SubscriptionProviderInterface;
 use Jul6Art\PushBundle\Mercure\TopicPrefix;
 use Jul6Art\PushBundle\Message\EntityAsyncEvent;
 use Jul6Art\PushBundle\Twig\JwtTokenExtension;
@@ -101,7 +105,42 @@ class PushExtension extends Extension implements PrependExtensionInterface
         }
 
         $this->registerSubscriberCookieFactory($container, $config);
+        $this->registerSubscriberEndpoint($container, \is_array($config['subscriber'] ?? null) ? $config['subscriber'] : []);
         $this->registerJwtTokenExtension($container);
+    }
+
+    /**
+     * Le point d'entrée du jeton d'abonnement (ADR-0001) : le répondeur, le fournisseur par défaut,
+     * l'alias vers le fournisseur configuré et le contrôleur. Sans hub, `MercureHubPass` retire le
+     * répondeur et le contrôleur avec la fabrique de cookie ; sans composant de sécurité, le
+     * contrôleur seul.
+     *
+     * @param array<mixed> $config
+     */
+    private function registerSubscriberEndpoint(ContainerBuilder $container, array $config): void
+    {
+        $container->register(SubscriberTokenResponder::class, SubscriberTokenResponder::class)
+            ->setArguments([new Reference(SubscriberCookieFactory::class)])
+            ->setPublic(true);
+
+        // Toujours enregistré, même quand l'application nomme le sien : comme le résolveur global.
+        $container->register(GlobalFeedSubscriptionProvider::class, GlobalFeedSubscriptionProvider::class);
+
+        $provider = $config['provider'] ?? null;
+        $provider = \is_string($provider) && '' !== $provider ? $provider : GlobalFeedSubscriptionProvider::class;
+        $container->setAlias(SubscriptionProviderInterface::class, $provider)->setPublic(true);
+
+        $access = $config['access'] ?? null;
+        $container->register(MercureTokenController::class, MercureTokenController::class)
+            ->setArguments([
+                new Reference('security.authorization_checker'),
+                new Reference('security.token_storage'),
+                new Reference(SubscriptionProviderInterface::class),
+                new Reference(SubscriberTokenResponder::class),
+                \is_string($access) && '' !== $access ? $access : 'IS_AUTHENTICATED_FULLY',
+            ])
+            ->addTag('controller.service_arguments')
+            ->setPublic(true);
     }
 
     /**

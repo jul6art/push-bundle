@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Jul6Art\PushBundle\Tests\DependencyInjection\Compiler;
 
+use Jul6Art\PushBundle\Controller\MercureTokenController;
 use Jul6Art\PushBundle\DependencyInjection\Compiler\MercureHubPass;
 use Jul6Art\PushBundle\Mercure\BufferingHub;
 use Jul6Art\PushBundle\Mercure\EntityChangePublisher;
@@ -11,6 +12,7 @@ use Jul6Art\PushBundle\Mercure\FeedTopicResolverInterface;
 use Jul6Art\PushBundle\Mercure\GlobalFeedTopicResolver;
 use Jul6Art\PushBundle\Mercure\MercureDrainListener;
 use Jul6Art\PushBundle\Mercure\SubscriberCookieFactory;
+use Jul6Art\PushBundle\Mercure\SubscriberTokenResponder;
 use Jul6Art\PushBundle\Mercure\TopicPrefix;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
@@ -38,6 +40,25 @@ final class MercureHubPassTest extends TestCase
         self::assertTrue($container->hasDefinition(EntityChangePublisher::class));
         self::assertTrue($container->hasDefinition(BufferingHub::class));
         self::assertTrue($container->hasAlias(FeedTopicResolverInterface::class));
+        self::assertTrue($container->hasDefinition(SubscriberTokenResponder::class));
+        self::assertTrue($container->hasDefinition(MercureTokenController::class));
+    }
+
+    /**
+     * Le point d'entrée du jeton contrôle l'accès et lit le compte connecté (ADR-0001) : sans le
+     * composant de sécurité, il disparaît, et le répondeur — qui n'en a pas besoin — reste pour
+     * l'application qui l'appelle elle-même.
+     */
+    public function testWithAHubButNoSecurityTheEndpointIsRemovedAndTheResponderKept(): void
+    {
+        $container = $this->containerWithRealTime(withSecurity: false);
+        $container->register('mercure.hub.default', \stdClass::class);
+
+        new MercureHubPass()->process($container);
+
+        self::assertFalse($container->hasDefinition(MercureTokenController::class));
+        self::assertTrue($container->hasDefinition(SubscriberTokenResponder::class));
+        self::assertTrue($container->hasDefinition(SubscriberCookieFactory::class));
     }
 
     /**
@@ -51,7 +72,7 @@ final class MercureHubPassTest extends TestCase
 
         new MercureHubPass()->process($container);
 
-        foreach ([EntityChangePublisher::class, BufferingHub::class, MercureDrainListener::class, GlobalFeedTopicResolver::class, SubscriberCookieFactory::class] as $service) {
+        foreach ([EntityChangePublisher::class, BufferingHub::class, MercureDrainListener::class, GlobalFeedTopicResolver::class, SubscriberCookieFactory::class, SubscriberTokenResponder::class, MercureTokenController::class] as $service) {
             self::assertFalse($container->hasDefinition($service), \sprintf('%s doit disparaître.', $service));
         }
 
@@ -68,12 +89,17 @@ final class MercureHubPassTest extends TestCase
         self::assertSame(['service_container'], array_keys($container->getDefinitions()));
     }
 
-    private function containerWithRealTime(): ContainerBuilder
+    private function containerWithRealTime(bool $withSecurity = true): ContainerBuilder
     {
         $container = new ContainerBuilder();
 
-        foreach ([EntityChangePublisher::class, BufferingHub::class, MercureDrainListener::class, GlobalFeedTopicResolver::class, SubscriberCookieFactory::class] as $service) {
+        foreach ([EntityChangePublisher::class, BufferingHub::class, MercureDrainListener::class, GlobalFeedTopicResolver::class, SubscriberCookieFactory::class, SubscriberTokenResponder::class, MercureTokenController::class] as $service) {
             $container->setDefinition($service, new Definition(\stdClass::class));
+        }
+
+        if ($withSecurity) {
+            $container->register('security.authorization_checker', \stdClass::class);
+            $container->register('security.token_storage', \stdClass::class);
         }
 
         $container->setAlias(FeedTopicResolverInterface::class, GlobalFeedTopicResolver::class);
