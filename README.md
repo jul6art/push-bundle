@@ -352,6 +352,18 @@ same burst coalescence. A reference is enough, but your resolver may load it to 
 pass loaded entities when there are many. The action is `created`, `updated`, `deleted` or
 `restored`; `bulk` is the coalescence's to decide.
 
+A statement that cannot load what it changed — a reconciliation that rewrites a tenant's rows in
+SQL to stay in constant memory, a retention purge — announces the batch instead (3.6), with any
+entity of its class on its topic and the number of rows:
+
+```php
+$count = $this->connection->executeStatement('UPDATE stock_level SET quantity = 0 WHERE organization_id = ?', [$id]);
+$this->publisher->announceBulk($this->stockLevels->findOneBy(['organization' => $id]), $count);
+```
+
+Subscribers receive one `action: "bulk"` event with that `count` and no id, exactly what a flush of
+as many rows would have sent.
+
 ### A hub that is down must not break a write
 
 Publishing inside `postFlush` means an HTTP call inside `$em->flush()`. A slow hub makes a slow

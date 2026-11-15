@@ -270,6 +270,32 @@ final class EntityChangePublisherTest extends AbstractFunctionalTestCase
         self::assertSame(EntityChangePublisher::BURST_THRESHOLD + 1, $payloads[0]['count']);
     }
 
+    /**
+     * Une réconciliation SQL ou une purge de rétention ne peut pas charger ce qu'elle a changé :
+     * un seul événement `bulk`, sans identifiant, dit aux abonnés du topic de relire (3.6).
+     */
+    public function testABatchIsAnnouncedWithoutItsEntities(): void
+    {
+        $representative = $this->persist(new Article('Un parmi d\'autres'));
+        $this->drain();
+
+        $this->publisher->announceBulk($representative, 250);
+
+        $payload = $this->onlyPayload();
+        self::assertSame('Article', $payload['type']);
+        self::assertSame('bulk', $payload['action']);
+        self::assertSame(250, $payload['count']);
+        self::assertNull($payload['id'], 'Le représentant n\'est pas le lot : son identifiant ne part pas.');
+    }
+
+    public function testAnEmptyBatchPublishesNothing(): void
+    {
+        $this->publisher->announceBulk(new Article(), 0);
+        $this->publisher->announceBulk(new Secret('rien à voir'), 12);
+
+        self::assertSame([], $this->drain());
+    }
+
     public function testAnEntityWithoutTheAttributeIsNeverAnnounced(): void
     {
         $secret = $this->persist(new Secret('rien à voir'));

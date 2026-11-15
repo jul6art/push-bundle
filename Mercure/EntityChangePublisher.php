@@ -32,7 +32,8 @@ use Symfony\Component\Mercure\Update;
  *     entities sharing a {type, topic} pair, they are collapsed into one
  *     `action:"bulk"` event carrying a `count`.
  *   - Changes no flush saw: a DQL or SQL bulk write bypasses the UnitOfWork, and
- *     {@see announce()} publishes what it changed, the same way (3.5).
+ *     {@see announce()} publishes what it changed, the same way (3.5) —
+ *     {@see announceBulk()} when the statement cannot load its rows (3.6).
  */
 final class EntityChangePublisher
 {
@@ -125,6 +126,29 @@ final class EntityChangePublisher
         }
 
         $this->publishAll($buffer);
+    }
+
+    /**
+     * Publishes a batch no flush saw, without loading it (3.6).
+     *
+     * Some statements cannot hand over what they changed: a reconciliation that rewrites a whole
+     * tenant's rows in SQL to stay in constant memory, a retention purge over years of rows.
+     * Loading them to {@see announce()} each would undo what the statement was written for. One
+     * `bulk` event, as the coalescence of a flush emits, tells every subscriber of the topic to
+     * re-read.
+     *
+     * @param object $representative any entity of the batch's class on the batch's topic — the
+     *                               resolver reads it as it reads a flushed one, and the payload
+     *                               carries neither its id nor its IRI
+     * @param int    $count          the rows the statement changed; nothing is published under one
+     */
+    public function announceBulk(object $representative, int $count): void
+    {
+        if ($count < 1 || null === $this->readAttribute($representative)) {
+            return;
+        }
+
+        $this->publishBulk($representative, $count);
     }
 
     /**
