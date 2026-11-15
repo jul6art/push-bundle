@@ -80,6 +80,28 @@ final class EntityChangePublisherTest extends AbstractFunctionalTestCase
         self::assertStringNotContainsString('confidentiel', json_encode($payload, \JSON_THROW_ON_ERROR));
     }
 
+    /**
+     * `at` à la milliseconde (3.4) : un abonné compare l'instant de la publication à celui où sa
+     * page a commencé à se rendre. À la seconde, une modification et la page rendue juste après sa
+     * redirection tombaient dans la même seconde — on ne savait plus laquelle précédait l'autre.
+     */
+    public function testThePublicationIsDatedToTheMillisecond(): void
+    {
+        $before = microtime(true);
+        $this->persist(new Article('Bonjour'));
+        $after = microtime(true);
+
+        $at = $this->onlyPayload()['at'];
+        self::assertIsString($at);
+        self::assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}[+-]\d{2}:\d{2}$/', $at);
+
+        $date = \DateTimeImmutable::createFromFormat('Y-m-d\TH:i:s.vP', $at);
+        self::assertInstanceOf(\DateTimeImmutable::class, $date);
+        $published = (float) $date->format('U.v');
+        self::assertGreaterThanOrEqual(floor($before * 1000) / 1000, $published);
+        self::assertLessThanOrEqual($after, $published);
+    }
+
     public function testAnEntityWithoutTheAttributeIsNeverPublished(): void
     {
         $secret = $this->persist(new Secret('rien à voir'));

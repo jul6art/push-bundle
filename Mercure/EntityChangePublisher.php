@@ -234,6 +234,15 @@ final class EntityChangePublisher
      * `/admin/feed` or `/global/feed` events even if the EventSource
      * ever receives them).
      *
+     * `at` is to the millisecond (3.4): a subscriber tells a change its page already shows from one
+     * that came after it by comparing `at` with the instant the page started rendering. To the
+     * second, a save and the page its redirection renders fell in the same second. It is still
+     * RFC 3339, which `new Date()` and `DateTimeImmutable` read as before.
+     *
+     * ⚠️ `actorId` says WHO, never WHERE: the same account in another tab or on another device
+     * signs its changes alike. A subscriber that skips "its own" changes by it leaves those other
+     * screens stale — decide on the state (`at`, a re-read), not on the author.
+     *
      * @return array<string, mixed>
      */
     private function buildBasePayload(string $type, ?string $iri, int|string|null $id, string $action, string $topic): array
@@ -246,7 +255,7 @@ final class EntityChangePublisher
             'id' => $id,
             'action' => $action,
             'topic' => $topic,
-            'at' => new \DateTimeImmutable()->format(\DateTimeInterface::ATOM),
+            'at' => new \DateTimeImmutable()->format('Y-m-d\TH:i:s.vP'),
             'actorId' => $actorId,
             'etag' => $this->buildEtag($iri, $type, $id, $action),
         ];

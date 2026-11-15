@@ -265,13 +265,21 @@ is nothing else to wire — but there are three things to know before relying on
 
 ```json
 {"type":"Page","iri":"/api/pages/12","id":12,"action":"updated",
- "topic":"/organizations/7/feed","at":"2026-08-20T09:12:44+00:00","actorId":3,"etag":"a1b2c3d4e5f6",
+ "topic":"/organizations/7/feed","at":"2026-08-20T09:12:44.318+00:00","actorId":3,"etag":"a1b2c3d4e5f6",
  "changedFields":["title"]}
 ```
 
 A subscriber receives **everything** published on a topic it is allowed to listen to, without
 passing through a voter. Putting a field value in the payload would therefore broadcast it past
 every access rule you have. Consumers refetch through the API, which is where those rules live.
+
+`at` is the instant of the flush, to the millisecond (3.4). A page that wants to know whether a
+change came after it was rendered compares `at` with the instant its request started
+(`REQUEST_TIME_FLOAT`): a save and the page its redirection renders fall in the same second.
+
+> ⚠️ **`actorId` says who, never where.** The same account in another tab or on another device signs
+> its changes alike: a subscriber that ignores "its own" changes by `actorId` leaves those other
+> screens stale. Decide on the state — re-read, or compare `at` with the page's own instant.
 
 `changedFields` is a **whitelist**, not a diff: only the intersection of what actually changed
 with what the attribute names is exposed, so a client can decide whether a change concerns it
