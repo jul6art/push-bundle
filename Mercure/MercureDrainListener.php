@@ -8,12 +8,22 @@ use Psr\Log\LoggerInterface;
 
 /**
  * Drains {@see BufferingHub} at the end of every HTTP request and CLI
- * command, after the response (or command output) has been sent.
+ * command, after the response (or command output) has been sent — and,
+ * in a Messenger worker, after every message it handles.
  *
  * `kernel.terminate` fires *after* the response body has reached the
  * client, so any hub latency or failure during drain is invisible to the
  * user. `console.terminate` plays the same role for CLI flushes
  * (fixtures, migrations, cron).
+ *
+ * ⚠️ A `messenger:consume` worker is ONE command: its `console.terminate`
+ * comes when it stops — an hour later with `--time-limit=3600`. Until 3.5,
+ * everything its handlers flushed stayed in the buffer until then, and the
+ * screens heard of it all at once, long after. The worker's own events
+ * (`WorkerMessageHandledEvent`, `WorkerMessageFailedEvent`) drain it after
+ * each message instead. A failed message drains too: what it flushed before
+ * failing is committed, and an update about a change a rollback undid only
+ * costs its subscribers a re-read.
  *
  * The two events and their priority are declared by the bundle, not by an attribute: the
  * listener only exists when a hub is configured, and a `#[AsEventListener]` on a vendor class is
@@ -41,6 +51,11 @@ final class MercureDrainListener
     }
 
     public function onConsoleTerminate(): void
+    {
+        $this->drain();
+    }
+
+    public function onWorkerMessage(): void
     {
         $this->drain();
     }

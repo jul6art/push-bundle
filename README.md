@@ -336,7 +336,13 @@ response; an unreachable one throws, and the user gets a 500 on a write that **s
 
 `Mercure\BufferingHub` decorates the hub so `publish()` only fills an in-memory buffer, and
 `Mercure\MercureDrainListener` empties it on `kernel.terminate` — after the response has left —
-and on `console.terminate` for commands. A hub failure there is logged and swallowed.
+on `console.terminate` for commands, and after every message a Messenger worker handles or fails
+(3.5). A hub failure there is logged and swallowed.
+
+> ⚠️ A `messenger:consume` worker is a single command: its `console.terminate` comes when it stops,
+> an hour later with `--time-limit=3600`. Before 3.5, what its handlers flushed waited in the buffer
+> until then. A handler that must publish *during* a long message (a progress bar) still drains
+> the buffer itself: `BufferingHub::drain()`.
 
 It is on by default. The trade is explicit: between the response and the drain there is a
 millisecond-scale window where the client has been told "saved" and subscribers have not heard

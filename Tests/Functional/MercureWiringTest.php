@@ -13,7 +13,10 @@ use Jul6Art\PushBundle\Mercure\SubscriberCookieFactory;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\DependencyInjection\Exception\ServiceNotFoundException;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Mercure\HubInterface;
+use Symfony\Component\Messenger\Event\WorkerMessageFailedEvent;
+use Symfony\Component\Messenger\Event\WorkerMessageHandledEvent;
 
 /**
  * Le câblage du temps réel, et surtout son absence.
@@ -43,6 +46,25 @@ final class MercureWiringTest extends AbstractFunctionalTestCase
         // La question qu'il faut poser : à travers quoi le publisher publie-t-il ? Si ce n'est
         // pas le tampon, une panne de hub redevient un 500 sur une écriture réussie.
         self::assertInstanceOf(BufferingHub::class, $this->hubBehind($this->boot()));
+    }
+
+    /**
+     * A `messenger:consume` worker is one command: its `console.terminate` comes when it stops, an
+     * hour later. What its handlers flush leaves after each message, handled or failed.
+     */
+    public function testAWorkerDrainsTheBufferAfterEachMessage(): void
+    {
+        $dispatcher = $this->boot()->get('event_dispatcher');
+        self::assertInstanceOf(EventDispatcherInterface::class, $dispatcher);
+
+        foreach ([WorkerMessageHandledEvent::class, WorkerMessageFailedEvent::class] as $event) {
+            $drains = array_filter(
+                $dispatcher->getListeners($event),
+                static fn (mixed $listener): bool => \is_array($listener) && $listener[0] instanceof MercureDrainListener && 'onWorkerMessage' === $listener[1],
+            );
+
+            self::assertCount(1, $drains, $event.' must drain the buffer.');
+        }
     }
 
     public function testBufferingCanBeTurnedOffWithoutLosingThePublisher(): void

@@ -113,6 +113,17 @@ final class BufferingHubTest extends TestCase
         self::assertCount(1, $inner->published, 'Une commande CLI doit vidanger comme une requête.');
     }
 
+    public function testAWorkerDrainsAfterEachMessage(): void
+    {
+        $inner = new RecordingHub();
+        $hub = new BufferingHub($inner, new CollectingLogger());
+        $hub->publish(new Update('/feed', '{}'));
+
+        new MercureDrainListener($hub, new CollectingLogger())->onWorkerMessage();
+
+        self::assertCount(1, $inner->published, 'Un worker est une seule commande : sans vidange par message, ses publications attendraient son arrêt.');
+    }
+
     public function testAPartialDrainIsReportedByTheListener(): void
     {
         $logger = new CollectingLogger();

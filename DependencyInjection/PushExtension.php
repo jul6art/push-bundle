@@ -30,6 +30,8 @@ use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
 use Symfony\Component\DependencyInjection\Reference;
 use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\Mercure\Update;
+use Symfony\Component\Messenger\Event\WorkerMessageFailedEvent;
+use Symfony\Component\Messenger\Event\WorkerMessageHandledEvent;
 use Twig\Extension\AbstractExtension;
 
 /**
@@ -184,7 +186,10 @@ class PushExtension extends Extension implements PrependExtensionInterface
             ])
             // Priorité basse : on vidange après tout le reste, quand la réponse est partie.
             ->addTag('kernel.event_listener', ['event' => KernelEvents::TERMINATE, 'method' => 'onKernelTerminate', 'priority' => -100])
-            ->addTag('kernel.event_listener', ['event' => ConsoleEvents::TERMINATE, 'method' => 'onConsoleTerminate', 'priority' => -100]);
+            ->addTag('kernel.event_listener', ['event' => ConsoleEvents::TERMINATE, 'method' => 'onConsoleTerminate', 'priority' => -100])
+            // A worker is one long command: without these, what its handlers flush would wait for it to stop.
+            ->addTag('kernel.event_listener', ['event' => WorkerMessageHandledEvent::class, 'method' => 'onWorkerMessage', 'priority' => -100])
+            ->addTag('kernel.event_listener', ['event' => WorkerMessageFailedEvent::class, 'method' => 'onWorkerMessage', 'priority' => -100]);
     }
 
     /**
