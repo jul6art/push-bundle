@@ -31,10 +31,15 @@ use Symfony\Component\Mercure\Update;
  *   - Burst coalescence: when a single flush touches more than BURST_THRESHOLD
  *     entities sharing a {type, topic} pair, they are collapsed into one
  *     `action:"bulk"` event carrying a `count`.
+ *   - Changes no flush saw: a DQL or SQL bulk write bypasses the UnitOfWork, and
+ *     {@see announce()} publishes what it changed, the same way (3.5).
  */
 final class EntityChangePublisher
 {
     public const BURST_THRESHOLD = 10;
+
+    /** What {@see announce()} accepts: the actions of a flush. `bulk` is the coalescence's to decide. */
+    private const ANNOUNCEABLE_ACTIONS = ['created', 'updated', 'deleted', 'restored'];
 
     /** @var list<array{entity: object, action: string, changedFields: list<string>}> */
     private array $buffered = [];
@@ -74,6 +79,59 @@ final class EntityChangePublisher
         $buffer = $this->buffered;
         $this->buffered = [];
 
+        $this->publishAll($buffer);
+    }
+
+    /**
+     * Publishes changes no flush saw (3.5).
+     *
+     * A DQL or SQL bulk write — `UPDATE … WHERE id IN (…)`, a `CASE WHEN` reorder — bypasses the
+     * UnitOfWork: `onFlush` hears nothing, and every screen that follows the entity stays stale
+     * until it reloads. Call this once the statement has run, with the entities it changed: they
+     * leave as a flush's would, through the same topic resolver and the same burst coalescence (ten
+     * or more of a type on one topic make one `bulk` event).
+     *
+     * Managed instances and `EntityManager::getReference()` references both do — the resolver may
+     * load a reference to read its tenant, so pass loaded entities when there are many. An entity
+     * without #[BroadcastableEntity] is skipped, as on a flush.
+     *
+     * @param iterable<object> $entities
+     * @param string           $action        created, updated, deleted or restored
+     * @param list<string>     $changedFields the fields the statement wrote, published on an update
+     *                                        within the attribute's whitelist, as on a flush
+     *
+     * @throws \InvalidArgumentException on any other action
+     */
+    public function announce(iterable $entities, string $action = 'updated', array $changedFields = []): void
+    {
+        if (!\in_array($action, self::ANNOUNCEABLE_ACTIONS, true)) {
+            throw new \InvalidArgumentException(\sprintf('A change is announced as one of "%s", not "%s".', implode('", "', self::ANNOUNCEABLE_ACTIONS), $action));
+        }
+
+        $buffer = [];
+        foreach ($entities as $entity) {
+            $attribute = $this->readAttribute($entity);
+            if (null === $attribute) {
+                continue;
+            }
+
+            $buffer[] = [
+                'entity' => $entity,
+                'action' => $action,
+                'changedFields' => 'updated' === $action
+                    ? array_values(array_intersect($changedFields, $attribute->changedFields))
+                    : [],
+            ];
+        }
+
+        $this->publishAll($buffer);
+    }
+
+    /**
+     * @param list<array{entity: object, action: string, changedFields: list<string>}> $buffer
+     */
+    private function publishAll(array $buffer): void
+    {
         foreach ($this->coalesceBursts($buffer) as $item) {
             if (isset($item['bulk'])) {
                 $this->publishBulk($item['representative'], $item['count']);

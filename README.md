@@ -329,6 +329,29 @@ The topic is also how a burst is grouped: more than `EntityChangePublisher::BURS
 entities of one type on one topic in a single flush collapse into a single `action: "bulk"` event
 carrying a `count`. Importing 500 rows then costs one reload per subscriber instead of 500.
 
+### A bulk write publishes nothing — announce it (3.5)
+
+The publisher listens to flushes. A DQL or SQL bulk write — `UPDATE … WHERE id IN (…)`, a
+`CASE WHEN` reorder, a cron that expires a batch — bypasses the UnitOfWork: no flush, no
+publication, and every screen that follows the entity stays stale until it reloads. Announce what
+the statement changed once it has run:
+
+```php
+$ids = $this->quotes->idsToExpire($now);
+$this->connection->executeStatement('UPDATE quote SET status = :expired WHERE id IN (:ids)', /* … */);
+
+$this->publisher->announce(
+    array_map(fn (int $id): Quote => $this->entityManager->getReference(Quote::class, $id), $ids),
+    'updated',
+    ['status'],
+);
+```
+
+The entities leave as a flush's would: same topic resolver, same whitelist of `changedFields`,
+same burst coalescence. A reference is enough, but your resolver may load it to read its tenant —
+pass loaded entities when there are many. The action is `created`, `updated`, `deleted` or
+`restored`; `bulk` is the coalescence's to decide.
+
 ### A hub that is down must not break a write
 
 Publishing inside `postFlush` means an HTTP call inside `$em->flush()`. A slow hub makes a slow

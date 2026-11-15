@@ -27,6 +27,8 @@ final class EntityChangePublisherTest extends AbstractFunctionalTestCase
 
     private BufferingHub $hub;
 
+    private EntityChangePublisher $publisher;
+
     #[\Override]
     protected function setUp(): void
     {
@@ -44,7 +46,9 @@ final class EntityChangePublisherTest extends AbstractFunctionalTestCase
         self::assertInstanceOf(BufferingHub::class, $hub);
         $this->hub = $hub;
 
-        self::assertInstanceOf(EntityChangePublisher::class, $container->get(EntityChangePublisher::class));
+        $publisher = $container->get(EntityChangePublisher::class);
+        self::assertInstanceOf(EntityChangePublisher::class, $publisher);
+        $this->publisher = $publisher;
 
         new SchemaTool($this->entityManager)->createSchema(
             $this->entityManager->getMetadataFactory()->getAllMetadata(),
@@ -201,6 +205,85 @@ final class EntityChangePublisherTest extends AbstractFunctionalTestCase
         self::assertCount(1, $payloads, 'Une rafale ne doit produire qu\'un événement.');
         self::assertSame('bulk', $payloads[0]['action']);
         self::assertSame(EntityChangePublisher::BURST_THRESHOLD + 1, $payloads[0]['count']);
+    }
+
+    /**
+     * Une écriture DQL ou SQL en masse contourne l'unité de travail : sans `announce()` (3.5),
+     * aucun écran qui suit l'entité ne l'apprend. Le changement annoncé part comme celui d'un flush,
+     * liste blanche comprise.
+     */
+    public function testAChangeNoFlushSawIsAnnounced(): void
+    {
+        $article = $this->persist(new Article('Avant'));
+        $this->drain();
+
+        $this->entityManager->createQuery('UPDATE '.Article::class.' a SET a.title = :title, a.viewCount = 3 WHERE a.id = :id')
+            ->setParameter('title', 'Après')
+            ->setParameter('id', $article->getId())
+            ->execute();
+        self::assertSame([], $this->drain(), 'Une écriture en masse ne passe par aucun flush.');
+
+        $this->publisher->announce([$article], 'updated', ['title', 'viewCount']);
+
+        $payload = $this->onlyPayload();
+        self::assertSame('Article', $payload['type']);
+        self::assertSame($article->getId(), $payload['id']);
+        self::assertSame('updated', $payload['action']);
+        self::assertSame(['title'], $payload['changedFields'], 'Hors liste blanche, un champ ne part jamais.');
+    }
+
+    /**
+     * L'appelant d'une écriture en masse tient souvent des identifiants, pas des entités : une
+     * référence suffit.
+     */
+    public function testAReferenceIsAnnouncedAsItsEntity(): void
+    {
+        $id = $this->persist(new Article('Bonjour'))->getId();
+        $this->drain();
+        $this->entityManager->clear();
+
+        $reference = $this->entityManager->getReference(Article::class, $id);
+        self::assertNotNull($reference);
+        $this->publisher->announce([$reference], 'deleted');
+
+        $payload = $this->onlyPayload();
+        self::assertSame('Article', $payload['type']);
+        self::assertSame($id, $payload['id']);
+        self::assertSame('deleted', $payload['action']);
+    }
+
+    public function testAnnouncedChangesCollapseIntoABulkEventLikeAFlush(): void
+    {
+        $articles = [];
+        for ($i = 0; $i <= EntityChangePublisher::BURST_THRESHOLD; ++$i) {
+            $articles[] = new Article('Lot '.$i);
+            $this->entityManager->persist(end($articles));
+        }
+        $this->entityManager->flush();
+        $this->drain();
+
+        $this->publisher->announce($articles);
+
+        $payloads = $this->drain();
+        self::assertCount(1, $payloads);
+        self::assertSame('bulk', $payloads[0]['action']);
+        self::assertSame(EntityChangePublisher::BURST_THRESHOLD + 1, $payloads[0]['count']);
+    }
+
+    public function testAnEntityWithoutTheAttributeIsNeverAnnounced(): void
+    {
+        $secret = $this->persist(new Secret('rien à voir'));
+
+        $this->publisher->announce([$secret]);
+
+        self::assertSame([], $this->drain());
+    }
+
+    public function testOnlyTheActionsOfAFlushCanBeAnnounced(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+
+        $this->publisher->announce([new Article()], 'bulk');
     }
 
     public function testTheActorIsNullOutsideAnySession(): void
