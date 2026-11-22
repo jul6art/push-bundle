@@ -1,8 +1,8 @@
 parameters:
     level: max
     phpVersion:
-        min: 80500
-        max: 80599
+        min: 80600
+        max: 80699
     paths:
         - PushBundle.php
         - Attribute
