@@ -78,7 +78,7 @@ final class BufferingHub implements RemoteHubInterface
         // deterministic placeholder; the real id from the hub is discarded
         // when drain() runs. Code that stores the return value for later
         // correlation would break — none in this codebase does.
-        return 'buffered-'.spl_object_hash($update);
+        return 'buffered-'.spl_object_id($update);
     }
 
     /**
