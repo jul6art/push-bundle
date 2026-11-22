@@ -11,6 +11,9 @@ $finder = new PhpCsFixer\Finder()
     ]);
 
 return new PhpCsFixer\Config()
+    // PHP CS Fixer knows PHP syntax up to 8.5 (v3.95.32): on PHP 8.6 it runs only when allowed. The code holds no syntax
+    // of 8.6 of its own; drop this line once a release supports 8.6.
+    ->setUnsupportedPhpVersionAllowed(true)
     ->setRiskyAllowed(true)
     ->setFinder($finder)
     ->setRules([

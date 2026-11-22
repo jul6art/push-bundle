@@ -33,7 +33,7 @@ cd push-bundle
 composer install
 ```
 
-You need PHP **^8.5** and Composer 2. There is nothing to boot: the bundle is exercised
+You need PHP **^8.6** and Composer 2. There is nothing to boot: the bundle is exercised
 through its test kernel, which the suite builds for you.
 
 ## The quality gate
@@ -72,7 +72,7 @@ catch what a local run cannot:
   matrix stays honest instead of letting Composer mix components from several
   branches.
 
-Supported at the moment: **PHP ^8.5**, **Symfony ^7.4 || ^8.0**.
+Supported at the moment: **PHP ^8.6**, **Symfony ^7.4 || ^8.0**.
 
 ## Semantic versioning is a promise here
 

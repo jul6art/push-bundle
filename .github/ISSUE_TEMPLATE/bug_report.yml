@@ -25,7 +25,7 @@ body:
     id: symfony
     attributes:
       label: Symfony and PHP versions
-      placeholder: Symfony 7.4.3, PHP 8.5.1
+      placeholder: Symfony 7.4.3, PHP 8.6.0
     validations:
       required: true
   - type: textarea
