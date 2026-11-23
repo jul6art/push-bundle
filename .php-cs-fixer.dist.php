@@ -19,7 +19,7 @@ return new PhpCsFixer\Config()
     ->setRules([
         '@Symfony' => true,
         '@Symfony:risky' => true,
-        '@PHP85Migration' => true,
+        '@PHP8x5Migration' => true,
         'declare_strict_types' => true,
         // Keeps the leading backslash on native calls, as the bundle sources do.
         'native_function_invocation' => [
