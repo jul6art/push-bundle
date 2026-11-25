@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Jul6Art\PushBundle\Mercure;
 
+use Jul6Art\CoreBundle\Util\Clock;
 use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\Mercure\HubInterface;
 use Symfony\Component\Mercure\Jwt\Grant;
@@ -101,7 +102,7 @@ final readonly class SubscriberCookieFactory
 
         return $factory->create(
             [] === $matchers ? [] : [new Grant([Grant::ACTION_SUBSCRIBE], $matchers)],
-            ['exp' => new \DateTimeImmutable(\sprintf('+%d seconds', $this->lifetime))],
+            ['exp' => Clock::now(\sprintf('+%d seconds', $this->lifetime))],
         );
     }
 
@@ -115,7 +116,7 @@ final readonly class SubscriberCookieFactory
         return Cookie::create(
             $this->hub->getCookieName(),
             $token,
-            new \DateTimeImmutable(\sprintf('+%d seconds', $this->lifetime)),
+            Clock::now(\sprintf('+%d seconds', $this->lifetime)),
             $this->cookiePath,
             null,
             $this->cookieSecure,

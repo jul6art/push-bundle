@@ -7,6 +7,7 @@ namespace Jul6Art\PushBundle\Mercure;
 use ApiPlatform\Metadata\IriConverterInterface;
 use Doctrine\ORM\Event\OnFlushEventArgs;
 use Doctrine\ORM\Event\PostFlushEventArgs;
+use Jul6Art\CoreBundle\Util\Clock;
 use Jul6Art\PushBundle\Attribute\BroadcastableEntity;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\Mercure\HubInterface;
@@ -337,7 +338,7 @@ final class EntityChangePublisher
             'id' => $id,
             'action' => $action,
             'topic' => $topic,
-            'at' => new \DateTimeImmutable()->format('Y-m-d\TH:i:s.vP'),
+            'at' => Clock::now()->format('Y-m-d\TH:i:s.vP'),
             'actorId' => $actorId,
             'etag' => $this->buildEtag($iri, $type, $id, $action),
         ];
